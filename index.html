@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravador de Áudio com Transcrição e Processamento</title>
+    
+    <!-- PWA elementos -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Transcritor">
+    <link rel="apple-touch-icon" href="./ios/180.png">
+    
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="./css/styles.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <h1>Gravador de Áudio com Transcrição e Processamento</h1>
+    
+    <!-- Barra de navegação com informações do usuário -->
+    <div class="nav-bar auth-logged-in" style="display: none;">
+        <div class="user-info">
+            <span>Olá, </span>
+            <span id="userEmail" class="user-email"></span>
+        </div>
+        <button class="logout-button">Sair</button>
+    </div>
+    
+    <!-- Banner de instalação PWA -->
+    <div id="pwaInstallPrompt">
+        Instale este app no seu dispositivo!
+        <button id="installButton">Instalar</button>
+        <button id="dismissButton">Agora não</button>
+    </div>
+    
+    <!-- Abas de navegação -->
+    <div class="tabs auth-logged-in" style="display: none;">
+        <div class="tab active" data-tab="recorder">Gravador</div>
+        <div class="tab" data-tab="history">Histórico</div>
+    </div>
+    
+    <!-- Conteúdo da aba Gravador -->
+    <div id="recorderTab" class="tab-content active">
+        <div class="api-key-container">
+            <h3>Configuração da API OpenAI</h3>
+            <div>
+                <label for="apiKey">Chave API da OpenAI:</label>
+                <input type="password" id="apiKey" placeholder="Digite sua chave API da OpenAI" style="width: 300px;">
+                <button id="saveApiKey">Salvar chave</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div>
+                <button id="startRecording">Iniciar Gravação</button>
+                <button id="stopRecording" disabled>Parar Gravação</button>
+                <span id="recordingTime" style="margin-left: 10px;"></span>
+            </div>
+            
+            <div id="status">Pronto para gravar. Clique em "Iniciar Gravação".</div>
+            <div id="error"></div>
+            
+            <h3>Texto Transcrito: <span class="editable-indicator">(Editável - clique para modificar)</span></h3>
+            <div id="transcription" class="editable" contenteditable="true"></div>
+            
+            <div class="processing-options">
+                <h3>Processamento do Texto:</h3>
+                <div style="margin-bottom: 15px;">
+                    <div style="display: inline-block; margin-right: 15px;">
+                        <input type="radio" id="optionSummary" name="processingOption" value="summary" checked>
+                        <label for="optionSummary">Resumo</label>
+                    </div>
+                    
+                    <div style="display: inline-block; margin-right: 15px;">
+                        <input type="radio" id="optionList" name="processingOption" value="list">
+                        <label for="optionList">Lista de Tópicos</label>
+                    </div>
+                    
+                    <div style="display: inline-block;">
+                        <input type="radio" id="optionMindMap" name="processingOption" value="mindmap">
+                        <label for="optionMindMap">Mapa Mental</label>
+                    </div>
+                </div>
+                <button id="processText" disabled>Processar Texto</button>
+            </div>
+            
+            <h3>Resultado do Processamento: <span class="editable-indicator">(Editável - clique para modificar)</span></h3>
+            <div id="processedOutput" class="editable" contenteditable="true"></div>
+            
+            <!-- Botão para salvar -->
+            <div style="margin-top: 20px; text-align: center;" class="auth-logged-in" style="display: none;">
+                <button id="saveTranscriptionBtn" disabled>Salvar Transcrição</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Conteúdo da aba Histórico -->
+    <div id="historyTab" class="tab-content">
+        <div class="history-section auth-logged-in" style="display: none;">
+            <h3>Suas Transcrições</h3>
+            <div id="noTranscriptions" style="text-align: center; display: none;">
+                <p>Você ainda não tem transcrições salvas.</p>
+                <p>Faça uma gravação e salve para visualizá-la aqui.</p>
+            </div>
+            <ul id="transcriptionList" class="transcription-list">
+                <!-- Lista de transcrições será carregada aqui via JavaScript -->
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Modal para salvar transcrição -->
+    <div id="saveModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 class="modal-title">Salvar Transcrição</h3>
+            <div class="modal-form-group">
+                <label for="transcriptionTitle">Título:</label>
+                <input type="text" id="transcriptionTitle" placeholder="Digite um título para esta transcrição">
+            </div>
+            <button id="confirmSaveBtn">Salvar</button>
+        </div>
+    </div>
+
+     
+<!-- Scripts da aplicação na ordem correta de dependência -->
+<script src="./js/firebase-config.js"></script>
+<script src="./js/security.js"></script>
+<script src="./js/storage-manager.js"></script>
+<script src="./js/user-auth.js"></script>
+<script src="./js/ui-controller.js"></script>
+<script src="./js/audio-recorder.js"></script>
+<script src="./js/transcription.js"></script>
+<script src="./js/app.js"></script>
+
+<!-- Script para registrar o service worker (por último) -->
+<script src="./js/register-sw.js"></script>
+</body>
+</html>

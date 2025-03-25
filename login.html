@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Biblioteca Material Icons da Google para ícones -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Alpine.js para interações simples -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Scripts Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- Scripts da aplicação -->
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/security.js"></script>
+  <script src="./js/storage-manager.js"></script>
+  <script src="./js/user-auth.js"></script>
+  <script src="./js/register-sw.js"></script>
+</head>
+<body class="login-page">
+  <div class="container" x-data="{ isLoginMode: true }">
+    <div class="auth-card">
+      <div class="app-logo">
+        <h1>Mapzy Vox IA</h1>
+        <p>Transcritor e Processador de Voz por IA</p>
+      </div>
+      
+      <div class="tabs">
+        <button class="tab-btn" :class="{ 'active': isLoginMode }" @click="isLoginMode = true">Entrar</button>
+        <button class="tab-btn" :class="{ 'active': !isLoginMode }" @click="isLoginMode = false">Cadastrar</button>
+      </div>
+      
+      <div x-show="isLoginMode" class="login-form">
+        <div class="input-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="Seu e-mail">
+        </div>
+        <div class="input-group">
+          <label for="password">Senha</label>
+          <input type="password" id="password" placeholder="Sua senha">
+        </div>
+        <button id="login-button" class="btn btn-primary">
+          <span class="material-icons">login</span> Entrar
+        </button>
+        <div class="divider">ou</div>
+        <button id="google-login" class="btn btn-outline google-btn">
+          <span class="material-icons google-icon">g_translate</span> Continuar com Google
+        </button>
+        <p class="text-center mt-2">
+          <a href="#" class="text-link" id="forgot-password">Esqueceu a senha?</a>
+        </p>
+      </div>
+      
+      <div x-show="!isLoginMode" class="register-form">
+        <div class="input-group">
+          <label for="reg-name">Nome</label>
+          <input type="text" id="reg-name" placeholder="Seu nome">
+        </div>
+        <div class="input-group">
+          <label for="reg-email">E-mail</label>
+          <input type="email" id="reg-email" placeholder="Seu e-mail">
+        </div>
+        <div class="input-group">
+          <label for="reg-password">Senha</label>
+          <input type="password" id="reg-password" placeholder="Crie uma senha">
+        </div>
+        <div class="input-group">
+          <label for="reg-password-confirm">Confirme a senha</label>
+          <input type="password" id="reg-password-confirm" placeholder="Confirme sua senha">
+        </div>
+        <button id="register-button" class="btn btn-primary">
+          <span class="material-icons">person_add</span> Cadastrar
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Verificar se o usuário já está logado
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          // Usuário já está logado, redirecionar para a página principal
+          window.location.href = './index.html';
+        }
+      });
+      
+      // Configuração dos botões de login
+      document.getElementById('login-button').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        // Verificar se os campos foram preenchidos
+        if (!email || !password) {
+          window.authUtils.showError('Por favor, preencha todos os campos');
+          return;
+        }
+        
+        // Fazer login
+        window.authUtils.loginWithEmail(email, password);
+      });
+      
+      document.getElementById('google-login').addEventListener('click', () => {
+        window.authUtils.loginWithGoogle();
+      });
+      
+      // Configuração do botão de registro
+      document.getElementById('register-button').addEventListener('click', () => {
+        const name = document.getElementById('reg-name').value;
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        const confirmPassword = document.getElementById('reg-password-confirm').value;
+        
+        // Verificar se os campos foram preenchidos
+        if (!name || !email || !password || !confirmPassword) {
+          window.authUtils.showError('Por favor, preencha todos os campos');
+          return;
+        }
+        
+        // Verificar se as senhas conferem
+        if (password !== confirmPassword) {
+          window.authUtils.showError('As senhas não conferem');
+          return;
+        }
+        
+        // Fazer registro
+        window.authUtils.registerUser(email, password, name);
+      });
+      
+      // Esqueceu a senha
+      document.getElementById('forgot-password').addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        if (!email) {
+          window.authUtils.showError('Por favor, digite seu e-mail');
+          return;
+        }
+        
+        firebase.auth().sendPasswordResetEmail(email)
+          .then(() => {
+            alert('Um email de redefinição de senha foi enviado para ' + email);
+          })
+          .catch((error) => {
+            console.error('Erro ao enviar email de redefinição:', error);
+            window.authUtils.showError('Erro ao enviar email de redefinição: ' + error.message);
+          });
+      });
+      
+      // Permitir login pressionando Enter no campo de senha
+      document.getElementById('password').addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          document.getElementById('login-button').click();
+        }
+      });
+      
+      // Permitir registro pressionando Enter no campo de confirmação de senha
+      document.getElementById('reg-password-confirm').addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          document.getElementById('register-button').click();
+        }
+      });
+    });
+  </script>
+  
+  <style>
+    /* Estilos para o login.html */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+    
+    :root {
+      --primary-color: #4285f4;
+      --primary-dark: #3367d6;
+      --secondary-color: #34a853;
+      --accent-color: #fbbc05;
+      --danger-color: #ea4335;
+      --dark: #202124;
+      --medium: #5f6368;
+      --light: #e8eaed;
+      --white: #ffffff;
+    }
+    
+    body.login-page {
+      background-color: var(--light);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 400px;
+    }
+    
+    .auth-card {
+      background-color: var(--white);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+    }
+    
+    .app-logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .app-logo h1 {
+      color: var(--primary-color);
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .app-logo p {
+      color: var(--medium);
+      font-size: 0.9rem;
+    }
+    
+    .tabs {
+      display: flex;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--light);
+    }
+    
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 0.75rem;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--medium);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    
+    .tab-btn.active {
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+    
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: var(--primary-color);
+    }
+    
+    .input-group {
+      margin-bottom: 1.2rem;
+    }
+    
+    .input-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--dark);
+      font-size: 0.9rem;
+    }
+    
+    .input-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--light);
+      border-radius: 4px;
+      font-size: 1rem;
+      transition: border 0.3s ease;
+    }
+    
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: var(--white);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .btn-outline {
+      background-color: var(--white);
+      color: var(--medium);
+      border: 1px solid var(--light);
+    }
+    
+    .btn-outline:hover {
+      background-color: var(--light);
+    }
+    
+    .google-btn {
+      margin-top: 0.5rem;
+    }
+    
+    .google-icon {
+      color: #4285F4;
+      font-size: 20px;
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 1rem 0;
+      color: var(--medium);
+      font-size: 0.9rem;
+    }
+    
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background-color: var(--light);
+    }
+    
+    .divider::before {
+      margin-right: 1rem;
+    }
+    
+    .divider::after {
+      margin-left: 1rem;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    .mt-2 {
+      margin-top: 0.5rem;
+    }
+    
+    .text-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    
+    .text-link:hover {
+      text-decoration: underline;
+    }
+    
+    /* Estilo para mensagens de erro */
+    #message-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: 90%;
+      max-width: 400px;
+    }
+    
+    .message {
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      animation: slide-in 0.3s ease;
+    }
+    
+    .message-error {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .fade-out {
+      animation: fade-out 0.5s ease forwards;
+    }
+    
+    @keyframes slide-in {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes fade-out {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  </style>
+</body>
+</html>
