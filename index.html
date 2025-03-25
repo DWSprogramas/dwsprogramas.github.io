@@ -30,7 +30,7 @@
             <span>Olá, </span>
             <span id="userEmail" class="user-email"></span>
         </div>
-        <button class="logout-button">Sair</button>
+        <button class="logout-button" onclick="window.authUtils.logout()">Sair</button>
     </div>
     
     <!-- Banner de instalação PWA -->
@@ -141,5 +141,6 @@
 
 <!-- Script para registrar o service worker (por último) -->
 <script src="./js/register-sw.js"></script>
+<script src="./js/verificador-estrutura.js"></script>
 </body>
 </html>
