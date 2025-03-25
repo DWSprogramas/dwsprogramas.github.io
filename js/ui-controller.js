@@ -1,4 +1,5 @@
 // Inicializar a interface de usuário
+// Inicializar a interface de usuário
 function initUI() {
     // Configurar navegação por abas
     setupTabs();
@@ -8,6 +9,9 @@ function initUI() {
     
     // Configurar instalação PWA
     setupPWAInstall();
+    
+    // Mostrar informações do usuário se estiver logado
+    mostrarInfoUsuario();
     
     // Adicionar manipulador de evento para o botão de logout
     const logoutButton = document.querySelector('.logout-button');
@@ -19,6 +23,66 @@ function initUI() {
     const saveApiKeyButton = document.getElementById('saveApiKey');
     if (saveApiKeyButton) {
         saveApiKeyButton.addEventListener('click', handleSaveApiKey);
+    }
+}
+
+// Função para mostrar informações do usuário na interface
+function mostrarInfoUsuario() {
+    console.log('Verificando usuário para mostrar informações...');
+    
+    // Verificar se o Firebase está disponível
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        const usuarioAtual = firebase.auth().currentUser;
+        
+        if (usuarioAtual) {
+            console.log('Usuário autenticado:', usuarioAtual.email);
+            
+            // Mostrar elementos que devem ser visíveis apenas para usuários logados
+            const elementosLogados = document.querySelectorAll('.auth-logged-in');
+            elementosLogados.forEach(el => {
+                el.style.display = 'block';
+            });
+            
+            // Atualizar o email do usuário em todos os elementos com ID userEmail
+            const elementosEmail = document.querySelectorAll('#userEmail');
+            elementosEmail.forEach(el => {
+                el.textContent = usuarioAtual.email;
+            });
+            
+            // Atualizar o nome do usuário se disponível
+            const nomeUsuario = usuarioAtual.displayName || 'Usuário';
+            const elementosNome = document.querySelectorAll('#userName');
+            elementosNome.forEach(el => {
+                el.textContent = nomeUsuario;
+            });
+            
+            // Adicionar avatar ou iniciais se disponível
+            if (elementosNome.length > 0 && usuarioAtual.photoURL) {
+                const elementosAvatar = document.querySelectorAll('.user-avatar');
+                elementosAvatar.forEach(el => {
+                    el.src = usuarioAtual.photoURL;
+                    el.style.display = 'block';
+                });
+            } else {
+                // Mostrar iniciais
+                const iniciais = (nomeUsuario.charAt(0) || 'U').toUpperCase();
+                const elementosIniciais = document.querySelectorAll('.user-initials');
+                elementosIniciais.forEach(el => {
+                    el.textContent = iniciais;
+                    el.style.display = 'flex';
+                });
+            }
+        } else {
+            console.log('Nenhum usuário autenticado');
+            
+            // Esconder elementos que devem ser visíveis apenas para usuários logados
+            const elementosLogados = document.querySelectorAll('.auth-logged-in');
+            elementosLogados.forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+    } else {
+        console.error('Firebase Auth não está disponível');
     }
 }
 
