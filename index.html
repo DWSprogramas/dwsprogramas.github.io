@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravador de Áudio com Transcrição e Processamento</title>
+    <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
     
     <!-- PWA elementos -->
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#3498db">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Transcritor">
+    <meta name="apple-mobile-web-app-title" content="Mapzy Vox IA">
     <link rel="apple-touch-icon" href="./ios/180.png">
     
     <!-- Estilos CSS -->
@@ -22,22 +22,26 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
-    <h1>Gravador de Áudio com Transcrição e Processamento</h1>
+    <!-- Cabeçalho com título estilizado -->
+    <div class="app-header">
+        <h1 class="app-title">Mapzy Vox IA</h1>
+        <p class="app-subtitle">Transcritor e Processador de Voz por IA</p>
+    </div>
     
     <!-- Barra de navegação com informações do usuário -->
-<div class="nav-bar auth-logged-in" style="display: none;">
-    <div class="user-info">
-        <div class="user-avatar-container">
-            <img class="user-avatar" src="" alt="Avatar" style="display: none;">
-            <div class="user-initials" style="display: none;">U</div>
+    <div class="nav-bar auth-logged-in" style="display: none;">
+        <div class="user-info">
+            <div class="user-avatar-container">
+                <img class="user-avatar" src="" alt="Avatar" style="display: none;">
+                <div class="user-initials" style="display: none;">U</div>
+            </div>
+            <div class="user-details">
+                <span id="userName" class="user-name">Usuário</span>
+                <span id="userEmail" class="user-email">email@exemplo.com</span>
+            </div>
         </div>
-        <div class="user-details">
-            <span id="userName" class="user-name">Usuário</span>
-            <span id="userEmail" class="user-email">email@exemplo.com</span>
-        </div>
+        <button class="logout-button" onclick="window.authUtils.logout()">Sair</button>
     </div>
-    <button class="logout-button" onclick="window.authUtils.logout()">Sair</button>
-</div>
     
     <!-- Banner de instalação PWA -->
     <div id="pwaInstallPrompt">
