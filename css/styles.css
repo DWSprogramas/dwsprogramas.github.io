@@ -855,3 +855,35 @@ body.login-page {
         width: 100%;
     }
 }   
+/* Estilos para o cabeçalho da aplicação */
+.app-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.app-title {
+    color: #4285f4;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.app-subtitle {
+    color: #5f6368;
+    font-size: 1.1rem;
+    margin-top: 0;
+}
+
+/* Adaptação para mobile */
+@media (max-width: 600px) {
+    .app-title {
+        font-size: 2rem;
+    }
+    
+    .app-subtitle {
+        font-size: 1rem;
+    }
+}
+
