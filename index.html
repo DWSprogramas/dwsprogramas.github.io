@@ -25,13 +25,19 @@
     <h1>Gravador de Áudio com Transcrição e Processamento</h1>
     
     <!-- Barra de navegação com informações do usuário -->
-    <div class="nav-bar auth-logged-in" style="display: none;">
-        <div class="user-info">
-            <span>Olá, </span>
-            <span id="userEmail" class="user-email"></span>
+<div class="nav-bar auth-logged-in" style="display: none;">
+    <div class="user-info">
+        <div class="user-avatar-container">
+            <img class="user-avatar" src="" alt="Avatar" style="display: none;">
+            <div class="user-initials" style="display: none;">U</div>
         </div>
-        <button class="logout-button" onclick="window.authUtils.logout()">Sair</button>
+        <div class="user-details">
+            <span id="userName" class="user-name">Usuário</span>
+            <span id="userEmail" class="user-email">email@exemplo.com</span>
+        </div>
     </div>
+    <button class="logout-button" onclick="window.authUtils.logout()">Sair</button>
+</div>
     
     <!-- Banner de instalação PWA -->
     <div id="pwaInstallPrompt">
