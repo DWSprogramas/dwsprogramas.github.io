@@ -2,7 +2,23 @@
 
 // Verificar o estado de autenticação atual
 function checkAuthState(callback) {
+  console.log("Verificando estado de autenticação...");
+  
   firebase.auth().onAuthStateChanged((user) => {
+    console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
+    
+    // Se estiver em uma página que requer autenticação e não houver usuário autenticado
+    if (!user && !window.location.pathname.includes('login.html')) {
+      console.log("Redirecionando para a página de login...");
+      window.location.href = './login.html';
+    }
+    
+    // Se estiver na página de login e houver usuário autenticado
+    if (user && window.location.pathname.includes('login.html')) {
+      console.log("Usuário já autenticado. Redirecionando para a página principal...");
+      window.location.href = './index.html';
+    }
+    
     if (callback) {
       callback(user);
     }
