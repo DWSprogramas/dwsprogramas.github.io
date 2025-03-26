@@ -1,12 +1,13 @@
 {
   "name": "Mapzy Vox IA",
   "short_name": "Mapzy Vox",
-  "description": "Aplicativo para gravar, transcrever e processar áudio usando IA",
+  "description": "Aplicativo para gravar, transcrever e processar áudio usando Inteligência Artificial",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#3498db",
   "orientation": "portrait-primary",
+  "id": "mapzyvox-ia-transcriptor",
   "icons": [
     {
       "src": "./android/android-launchericon-48-48.png",
@@ -137,11 +138,38 @@
   "dir": "ltr",
   "prefer_related_applications": false,
   "related_applications": [],
-  "iarc_rating_id": "",
-  "handle_links": "preferred",
+  "handle_links": "prefer",
   "launch_handler": {
     "client_mode": ["navigate-existing", "auto"]
   },
   "scope": "./",
-  "id": "mapzyvox-ia-transcriptor"
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "share_target": {
+    "action": "./index.html?share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "./index.html?file",
+      "accept": {
+        "audio/*": [".mp3", ".wav", ".ogg", ".webm"]
+      }
+    }
+  ],
+  "permissions": ["microphone"],
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
+  "protocol_handlers": [
+    {
+      "protocol": "web+mapzyvox",
+      "url": "./index.html?protocol=%s"
+    }
+  ],
+  "capture_links": "existing-client-navigate"
 }
