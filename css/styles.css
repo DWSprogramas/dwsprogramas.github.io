@@ -887,3 +887,29 @@ body.login-page {
     }
 }
 
+// Nome do cache para armazenar arquivos
+const CACHE_NAME = 'mapzyvox-cache-v2'; // Incrementar versão para forçar uma atualização
+const OFFLINE_URL = './offline.html';
+
+// Lista de arquivos para serem cacheados inicialmente
+const urlsToCache = [
+  './',
+  './index.html',
+  './login.html',
+  './dashboard.html',
+  './manifest.json',
+  './offline.html',
+  './css/styles.css',
+  './js/app.js',
+  './js/audio-recorder.js',
+  './js/firebase-config.js',
+  './js/register-sw.js',
+  './js/security.js',
+  './js/storage-manager.js',
+  './js/transcription.js',
+  './js/ui-controller.js',
+  './js/user-auth.js',
+  './android/android-launchericon-48-48.png',
+  './android/android-launchericon-72-72.png',
+  './android/android-launchericon-96-96.png',
+  './android/android-launchericon
