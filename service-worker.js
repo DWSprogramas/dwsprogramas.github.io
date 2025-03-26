@@ -1,773 +1,267 @@
-/* Estilos globais */
-body {
-    font-family: 'Roboto', Arial, sans-serif;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #f8f9fa;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-}
-
-button {
-    padding: 10px 15px;
-    margin: 5px;
-    cursor: pointer;
-    border-radius: 5px;
-    border: none;
-    background-color: #3498db;
-    color: white;
-    font-weight: bold;
-    transition: all 0.3s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-button:hover {
-    background-color: #2980b9;
-}
-
-button:disabled {
-    background-color: #95a5a6;
-    cursor: not-allowed;
-}
-
-button.active {
-    background-color: #2ecc71;
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-button#stopRecording {
-    background-color: #e74c3c;
-}
-
-button#stopRecording:disabled {
-    background-color: #95a5a6;
-}
-
-button#processText {
-    background-color: #9b59b6;
-}
-
-button#processText.active {
-    background-color: #8e44ad;
-}
-
-#status, #error {
-    margin: 10px 0;
-    padding: 10px;
-    border-radius: 5px;
-}
-
-#status {
-    background-color: #e6f7ff;
-    border-left: 4px solid #3498db;
-}
-
-#error {
-    background-color: #ffe6e6;
-    color: #cc0000;
-    display: none;
-    border-left: 4px solid #e74c3c;
-}
-
-#transcription, #processedOutput {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    min-height: 100px;
-    white-space: pre-wrap;
-    background-color: white;
-    transition: all 0.3s ease;
-}
-
-.editable {
-    outline: none;
-    position: relative;
-}
-
-.editable:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
-}
-
-.editable:empty:before {
-    content: "Clique para editar...";
-    color: #aaa;
-    font-style: italic;
-}
-
-.editable-highlight {
-    animation: highlight 2s ease;
-}
-
-@keyframes highlight {
-    0% { background-color: #fff; }
-    25% { background-color: #e6f7ff; }
-    75% { background-color: #e6f7ff; }
-    100% { background-color: #fff; }
-}
-
-.editable-indicator {
-    font-size: 12px;
-    color: #7f8c8d;
-    margin-left: 10px;
-    font-style: italic;
-}
-
-.container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.api-key-container {
-    margin-bottom: 15px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.processing-options {
-    margin: 15px 0;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-h1, h3 {
-    color: #2c3e50;
-}
-
-h3 {
-    margin-top: 0;
-    display: flex;
-    align-items: center;
-}
-
-.hidden {
-    display: none;
-}
-
-input[type="radio"] {
-    margin-right: 5px;
-}
-
-label {
-    cursor: pointer;
-    padding: 3px 8px;
-    border-radius: 3px;
-    transition: background-color 0.2s;
-}
-
-label:hover {
-    background-color: #f0f0f0;
-}
-
-input[type="radio"]:checked + label {
-    background-color: #e6f7ff;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-#recordingTime {
-    font-family: monospace;
-    font-weight: bold;
-    color: #e74c3c;
-}
-
-input[type="password"], input[type="text"], input[type="email"] {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    width: 300px;
-}
-
-/* Estilos para a barra de status do PWA */
-#pwaInstallPrompt {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #3498db;
-    color: white;
-    padding: 12px;
-    text-align: center;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-}
-
-#pwaInstallPrompt button {
-    background: white;
-    color: #3498db;
-    border: none;
-    padding: 8px 15px;
-    margin-left: 10px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* Estilos para a área de histórico */
-.history-section {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: white;
-}
-
-.transcription-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.transcription-item {
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    padding: 15px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.transcription-item:hover {
-    background-color: #f5f9ff;
-    border-color: #3498db;
-}
-
-.transcription-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #2c3e50;
-}
-
-.transcription-date {
-    font-size: 12px;
-    color: #7f8c8d;
-}
-
-.transcription-content {
-    margin-top: 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.transcription-controls {
-    display: flex;
-    gap: 5px;
-    margin-top: 10px;
-}
-
-.transcription-controls button {
-    padding: 5px 10px;
-    font-size: 12px;
-}
-
-/* Estilo para a barra de navegação */
-.nav-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #ddd;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.user-email {
-    font-weight: bold;
-    color: #2c3e50;
-}
-
-.logout-button {
-    background-color: transparent;
-    color: #e74c3c;
-    border: 1px solid #e74c3c;
-    box-shadow: none;
-}
-
-.logout-button:hover {
-    background-color: #e74c3c;
-    color: white;
-}
-
-/* Abas de navegação */
-.tabs {
-    display: flex;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #ddd;
-}
-
-.tab {
-    padding: 10px 20px;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    color: #7f8c8d;
-    font-weight: bold;
-    transition: all 0.3s;
-}
-
-.tab:hover {
-    color: #3498db;
-}
-
-.tab.active {
-    color: #3498db;
-    border-bottom-color: #3498db;
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-/* Modal para salvar transcrição */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-    background-color: white;
-    margin: 15% auto;
-    padding: 20px;
-    border-radius: 5px;
-    width: 80%;
-    max-width: 500px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.close-modal {
-    float: right;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #7f8c8d;
-}
-
-.close-modal:hover {
-    color: #2c3e50;
-}
-
-.modal-title {
-    margin-top: 0;
-    color: #3498db;
-}
-
-.modal-form-group {
-    margin-bottom: 15px;
-}
-
-.modal-form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.modal-form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-}
-
-/* Estilos específicos para a página de login */
-body.login-page {
-    background-color: var(--light);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-:root {
-    --primary-color: #4285f4;
-    --primary-dark: #3367d6;
-    --secondary-color: #34a853;
-    --accent-color: #fbbc05;
-    --danger-color: #ea4335;
-    --dark: #202124;
-    --medium: #5f6368;
-    --light: #e8eaed;
-    --white: #ffffff;
-}
-
-.auth-card {
-    background-color: var(--white);
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    width: 100%;
-    max-width: 400px;
-}
-
-.app-logo {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.app-logo h1 {
-    color: var(--primary-color);
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
-}
-
-.app-logo p {
-    color: var(--medium);
-    font-size: 0.9rem;
-}
-
-.tab-btn {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 0.75rem;
-    cursor: pointer;
-    font-size: 1rem;
-    color: var(--medium);
-    position: relative;
-    transition: all 0.3s ease;
-}
-
-.tab-btn.active {
-    color: var(--primary-color);
-    font-weight: 500;
-}
-
-.tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: var(--primary-color);
-}
-
-.input-group {
-    margin-bottom: 1.2rem;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: var(--dark);
-    font-size: 0.9rem;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--light);
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border 0.3s ease;
-}
-
-.input-group input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-}
-
-.btn {
-    width: 100%;
-    padding: 0.75rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-    color: var(--white);
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-dark);
-}
-
-.btn-outline {
-    background-color: var(--white);
-    color: var(--medium);
-    border: 1px solid var(--light);
-}
-
-.btn-outline:hover {
-    background-color: var(--light);
-}
-
-.google-btn {
-    margin-top: 0.5rem;
-}
-
-.google-icon {
-    color: #4285F4;
-    font-size: 20px;
-}
-
-.divider {
-    display: flex;
-    align-items: center;
-    margin: 1rem 0;
-    color: var(--medium);
-    font-size: 0.9rem;
-}
-
-.divider::before,
-.divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background-color: var(--light);
-}
-
-.divider::before {
-    margin-right: 1rem;
-}
-
-.divider::after {
-    margin-left: 1rem;
-}
-
-.text-center {
-    text-align: center;
-}
-
-.mt-2 {
-    margin-top: 0.5rem;
-}
-
-.text-link {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-size: 0.9rem;
-}
-
-.text-link:hover {
-    text-decoration: underline;
-}
-
-/* Estilo para mensagens de erro */
-#message-container {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-    width: 90%;
-    max-width: 400px;
-}
-
-.message {
-    padding: 12px 16px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    animation: slide-in 0.3s ease;
-}
-
-.message-error {
-    background-color: var(--danger-color);
-    color: white;
-}
-
-.fade-out {
-    animation: fade-out 0.5s ease forwards;
-}
-
-@keyframes slide-in {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes fade-out {
-    from { opacity: 1; }
-    to { opacity: 0; }
-}
-
-/* Estilos para dashboard */
-.stat-card {
-    background-color: white;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    text-align: center;
-    margin-bottom: 15px;
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #3498db;
-    margin: 10px 0;
-}
-
-.stat-label {
-    color: #7f8c8d;
-    font-size: 0.9rem;
-}
-
-.stats-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.card {
-    background-color: white;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.card-title {
-    margin-top: 0;
-    color: #2c3e50;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #7f8c8d;
-}
-
-.empty-state-icon {
-    font-size: 3rem;
-    margin-bottom: 20px;
-    color: #bdc3c7;
-}
-
-.transcription-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.btn-view, .btn-edit, .btn-delete {
-    padding: 5px 10px;
-    font-size: 0.85rem;
-}
-
-.btn-edit {
-    background-color: #f39c12;
-}
-
-.btn-edit:hover {
-    background-color: #e67e22;
-}
-
-.btn-delete {
-    background-color: #e74c3c;
-}
-
-.btn-delete:hover {
-    background-color: #c0392b;
-}
-
-.search-bar {
-    margin-bottom: 20px;
-}
-
-.search-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-}
-
-/* Estilos responsivos */
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
+// Mapzy Vox IA - Service Worker
+const CACHE_NAME = 'mapzyvox-cache-v1';
+const OFFLINE_URL = '/mapzy-ia/offline.html';
+const BASE_PATH = '/mapzy-ia';
+
+// Arquivos a serem pré-cacheados na instalação
+const PRE_CACHE_URLS = [
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/login.html`,
+  `${BASE_PATH}/dashboard.html`,
+  `${BASE_PATH}/offline.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/css/styles.css`,
+  `${BASE_PATH}/js/app.js`,
+  `${BASE_PATH}/js/audio-recorder.js`,
+  `${BASE_PATH}/js/firebase-config.js`,
+  `${BASE_PATH}/js/register-sw.js`,
+  `${BASE_PATH}/js/security.js`,
+  `${BASE_PATH}/js/storage-manager.js`,
+  `${BASE_PATH}/js/transcription.js`,
+  `${BASE_PATH}/js/ui-controller.js`,
+  `${BASE_PATH}/js/user-auth.js`,
+  `${BASE_PATH}/android/android-launchericon-192-192.png`,
+  `${BASE_PATH}/android/android-launchericon-512-512.png`,
+  `${BASE_PATH}/ios/180.png`
+];
+
+// Instalar o service worker
+self.addEventListener('install', (event) => {
+  console.log('[Service Worker] Instalando...');
+  
+  // Skip waiting força a ativação imediata
+  self.skipWaiting();
+  
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[Service Worker] Cache aberto, adicionando recursos');
+        return cache.addAll(PRE_CACHE_URLS);
+      })
+      .catch((error) => {
+        console.error('[Service Worker] Erro durante o cache inicial:', error);
+      })
+  );
+});
+
+// Ativar o service worker
+self.addEventListener('activate', (event) => {
+  console.log('[Service Worker] Ativando...');
+  
+  // Tomar controle de clientes não controlados (páginas abertas)
+  event.waitUntil(self.clients.claim());
+  
+  // Limpar caches antigos
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('[Service Worker] Removendo cache antigo:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// Função para verificar se uma URL é do mesmo domínio
+function isSameOrigin(url) {
+  const self = new URL(self.location);
+  const target = new URL(url, self.location.origin);
+  return self.origin === target.origin;
+}
+
+// Interceptar requisições
+self.addEventListener('fetch', (event) => {
+  // Não interceptar requisições para APIs externas
+  if (event.request.url.includes('api.openai.com') || 
+      event.request.url.includes('firebaseio.com') ||
+      event.request.url.includes('googleapis.com')) {
+    return;
+  }
+  
+  // Para requisições com método diferente de GET, não usar cache
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
+  // Estratégia para navegação (Network First)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          return caches.open(CACHE_NAME)
+            .then((cache) => {
+              console.log('[Service Worker] Cacheando página de navegação:', event.request.url);
+              cache.put(event.request, response.clone());
+              return response;
+            });
+        })
+        .catch(() => {
+          return caches.match(event.request)
+            .then((response) => {
+              if (response) {
+                return response;
+              }
+              
+              console.log('[Service Worker] Carregando página offline para navegação');
+              return caches.match(OFFLINE_URL);
+            });
+        })
+    );
+    return;
+  }
+  
+  // Estratégia para recursos estáticos (Cache First)
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Retornar do cache se disponível
+        if (response) {
+          return response;
+        }
+        
+        // Se não estiver no cache, buscar na rede
+        return fetch(event.request)
+          .then((networkResponse) => {
+            // Cache miss - buscar da rede
+            console.log('[Service Worker] Carregando da rede recurso não cacheado:', event.request.url);
+            
+            // Fazer clone para armazenar no cache
+            const responseToCache = networkResponse.clone();
+            
+            // Somente cachear recursos do mesmo domínio
+            if (isSameOrigin(event.request.url)) {
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+            
+            return networkResponse;
+          })
+          .catch((error) => {
+            console.error('[Service Worker] Erro ao buscar e cachear:', error);
+            
+            // Para imagens, retornar uma imagem placeholder
+            if (event.request.destination === 'image') {
+              return caches.match(`${BASE_PATH}/android/android-launchericon-192-192.png`);
+            }
+            
+            // Para outros recursos, retornar nulo ou uma resposta default
+            return new Response('Recurso não disponível offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({
+                'Content-Type': 'text/plain'
+              })
+            });
+          });
+      })
+  );
+});
+
+// Lidar com notificações push
+self.addEventListener('push', (event) => {
+  console.log('[Service Worker] Notificação push recebida');
+  
+  let notificationData = {};
+  
+  try {
+    if (event.data) {
+      notificationData = event.data.json();
     }
+  } catch (error) {
+    notificationData = {
+      title: 'Mapzy Vox IA',
+      body: 'Nova atualização disponível',
+      icon: `${BASE_PATH}/android/android-launchericon-192-192.png`
+    };
+  }
+  
+  const title = notificationData.title || 'Mapzy Vox IA';
+  const options = {
+    body: notificationData.body || 'Nova notificação',
+    icon: notificationData.icon || `${BASE_PATH}/android/android-launchericon-192-192.png`,
+    badge: `${BASE_PATH}/android/android-launchericon-96-96.png`,
+    vibrate: [100, 50, 100],
+    data: {
+      url: notificationData.url || `${BASE_PATH}/`
+    }
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// Ação ao clicar na notificação
+self.addEventListener('notificationclick', (event) => {
+  console.log('[Service Worker] Notificação clicada');
+  
+  event.notification.close();
+  
+  // Verificar se há URL para abrir
+  if (event.notification.data && event.notification.data.url) {
+    event.waitUntil(
+      clients.openWindow(event.notification.data.url)
+    );
+  } else {
+    event.waitUntil(
+      clients.openWindow(`${BASE_PATH}/`)
+    );
+  }
+});
+
+// Evento para sincronização em segundo plano
+self.addEventListener('sync', (event) => {
+  console.log('[Service Worker] Sync event:', event.tag);
+  
+  if (event.tag === 'sync-transcriptions') {
+    event.waitUntil(syncTranscriptions());
+  }
+});
+
+// Função para sincronizar dados (pode ser expandida conforme necessário)
+async function syncTranscriptions() {
+  console.log('[Service Worker] Sincronizando transcrições');
+  
+  // Aqui você pode implementar a lógica de sincronização
+  // Exemplo: buscar dados do IndexedDB e enviar para o Firebase
+  
+  return Promise.resolve(); // Retornar uma promise resolvida para o evento sync
+}
+
+// Manipular compartilhamento (share target)
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (url.pathname.includes('/mapzy-ia/') && url.search.includes('?share')) {
+    console.log('[Service Worker] Interceptando compartilhamento');
+    // Aqui você pode implementar lógica para lidar com o conteúdo compartilhado
+  }
+});
+
+// Configurar os widgets web
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag.startsWith('widget-update-')) {
+    const widgetId = event.tag.replace('widget-update-', '');
+    console.log('[Service Worker] Atualizando widget:', widgetId);
     
-    .container {
-        width: 100%;
-    }
-    
-    input[type="password"], input[type="text"], input[type="email"] {
-        width: 100%;
-    }
-    
-    .stats-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .nav-bar {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .transcription-actions {
-        flex-wrap: wrap;
-    }
+    event.waitUntil(updateWidget(widgetId));
+  }
+});
+
+// Função para atualizar widgets (será implementada conforme necessário)
+async function updateWidget(widgetId) {
+  console.log('[Service Worker] Processando atualização do widget:', widgetId);
+  // Implementar lógica de atualização do widget
+  return Promise.resolve();
 }
 
-/* Estilos de acessibilidade */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-
-/* Tema escuro para quem preferir */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --light: #202124;
-        --dark: #e8eaed;
-        --white: #303134;
-        --medium: #bdc1c6;
-    }
-    
-    body {
-        background-color: #202124;
-        color: #e8eaed;
-    }
-    
-    .card, .auth-card, .stat-card, .api-key-container, .processing-options, .transcription-item {
-        background-color: #303134;
-        border-color: #5f6368;
-    }
-    
-    h1, h3, .transcription-title {
-        color: #e8eaed;
-    }
-    
-    #transc
+// Evento para instalação do PWA
+self.addEventListener('appinstalled', (event) => {
+  console.log('[Service Worker] App instalado');
+});
