@@ -1,238 +1,773 @@
-// Nome do cache para armazenar arquivos
-const CACHE_NAME = 'mapzyvox-cache-v2'; // Incrementar versão para forçar uma atualização
-const OFFLINE_URL = './offline.html';
+/* Estilos globais */
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
 
-// Lista de arquivos para serem cacheados inicialmente
-const urlsToCache = [
-  './',
-  './index.html',
-  './login.html',
-  './dashboard.html',
-  './manifest.json',
-  './offline.html',
-  './css/styles.css',
-  './js/app.js',
-  './js/audio-recorder.js',
-  './js/firebase-config.js',
-  './js/register-sw.js',
-  './js/security.js',
-  './js/storage-manager.js',
-  './js/transcription.js',
-  './js/ui-controller.js',
-  './js/user-auth.js',
-  './android/android-launchericon-48-48.png',
-  './android/android-launchericon-72-72.png',
-  './android/android-launchericon-96-96.png',
-  './android/android-launchericon-144-144.png',
-  './android/android-launchericon-192-192.png',
-  './android/android-launchericon-512-512.png',
-  './ios/152.png',
-  './ios/180.png',
-  './ios/256.png',
-  'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
-  'https://fonts.googleapis.com/icon?family=Material+Icons'
-];
+button {
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 
-// Instalar o service worker e criar o cache
-self.addEventListener('install', event => {
-  console.log('Service Worker instalando...');
-  
-  // Skip waiting força a ativação imediata
-  self.skipWaiting();
-  
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Cache aberto');
-        // Tentativa de cache com tratamento de erro por item
-        const cachePromises = urlsToCache.map(url => {
-          return cache.add(url).catch(error => {
-            console.warn(`Falha ao cachear ${url}:`, error);
-          });
-        });
-        
-        return Promise.all(cachePromises);
-      })
-      .catch(error => {
-        console.error('Erro durante o cache inicial:', error);
-      })
-  );
-});
+button:hover {
+    background-color: #2980b9;
+}
 
-// Ativar o service worker e limpar caches antigos
-self.addEventListener('activate', event => {
-  console.log('Service Worker ativando...');
-  
-  // Tomar controle de clientes não controlados (páginas abertas)
-  event.waitUntil(self.clients.claim());
-  
-  // Limpar caches antigos
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Removendo cache antigo:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => {
-      console.log('Service Worker ativado!');
-    })
-  );
-});
+button:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
 
-// Interceptar as requisições de rede com estratégia network-first para conteúdo principal
-// e cache-first para recursos estáticos
-self.addEventListener('fetch', event => {
-  // Não interceptar requisições para APIs externas
-  if (event.request.url.includes('api.openai.com') || 
-      event.request.url.includes('firebaseio.com') ||
-      event.request.url.includes('googleapis.com')) {
-    return;
-  }
-  
-  // Para requisições com método diferente de GET, não usar cache
-  if (event.request.method !== 'GET') {
-    return;
-  }
+button.active {
+    background-color: #2ecc71;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
 
-  // URL da requisição para comparações
-  const requestUrl = new URL(event.request.url);
-  
-  // Estratégia para arquivos HTML e JavaScript: Network First
-  if (requestUrl.pathname.endsWith('.html') || 
-      requestUrl.pathname.endsWith('.js') || 
-      requestUrl.pathname === '/' ||
-      requestUrl.pathname === '') {
+button#stopRecording {
+    background-color: #e74c3c;
+}
+
+button#stopRecording:disabled {
+    background-color: #95a5a6;
+}
+
+button#processText {
+    background-color: #9b59b6;
+}
+
+button#processText.active {
+    background-color: #8e44ad;
+}
+
+#status, #error {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#status {
+    background-color: #e6f7ff;
+    border-left: 4px solid #3498db;
+}
+
+#error {
+    background-color: #ffe6e6;
+    color: #cc0000;
+    display: none;
+    border-left: 4px solid #e74c3c;
+}
+
+#transcription, #processedOutput {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    min-height: 100px;
+    white-space: pre-wrap;
+    background-color: white;
+    transition: all 0.3s ease;
+}
+
+.editable {
+    outline: none;
+    position: relative;
+}
+
+.editable:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+.editable:empty:before {
+    content: "Clique para editar...";
+    color: #aaa;
+    font-style: italic;
+}
+
+.editable-highlight {
+    animation: highlight 2s ease;
+}
+
+@keyframes highlight {
+    0% { background-color: #fff; }
+    25% { background-color: #e6f7ff; }
+    75% { background-color: #e6f7ff; }
+    100% { background-color: #fff; }
+}
+
+.editable-indicator {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-left: 10px;
+    font-style: italic;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.api-key-container {
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.processing-options {
+    margin: 15px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+h1, h3 {
+    color: #2c3e50;
+}
+
+h3 {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+}
+
+.hidden {
+    display: none;
+}
+
+input[type="radio"] {
+    margin-right: 5px;
+}
+
+label {
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+label:hover {
+    background-color: #f0f0f0;
+}
+
+input[type="radio"]:checked + label {
+    background-color: #e6f7ff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+#recordingTime {
+    font-family: monospace;
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+input[type="password"], input[type="text"], input[type="email"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    width: 300px;
+}
+
+/* Estilos para a barra de status do PWA */
+#pwaInstallPrompt {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #3498db;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+#pwaInstallPrompt button {
+    background: white;
+    color: #3498db;
+    border: none;
+    padding: 8px 15px;
+    margin-left: 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Estilos para a área de histórico */
+.history-section {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+}
+
+.transcription-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.transcription-item {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.transcription-item:hover {
+    background-color: #f5f9ff;
+    border-color: #3498db;
+}
+
+.transcription-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #2c3e50;
+}
+
+.transcription-date {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.transcription-content {
+    margin-top: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.transcription-controls {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.transcription-controls button {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+/* Estilo para a barra de navegação */
+.nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-email {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.logout-button {
+    background-color: transparent;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+    box-shadow: none;
+}
+
+.logout-button:hover {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* Abas de navegação */
+.tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: #7f8c8d;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.tab:hover {
+    color: #3498db;
+}
+
+.tab.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Modal para salvar transcrição */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.close-modal {
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #7f8c8d;
+}
+
+.close-modal:hover {
+    color: #2c3e50;
+}
+
+.modal-title {
+    margin-top: 0;
+    color: #3498db;
+}
+
+.modal-form-group {
+    margin-bottom: 15px;
+}
+
+.modal-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.modal-form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+/* Estilos específicos para a página de login */
+body.login-page {
+    background-color: var(--light);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+:root {
+    --primary-color: #4285f4;
+    --primary-dark: #3367d6;
+    --secondary-color: #34a853;
+    --accent-color: #fbbc05;
+    --danger-color: #ea4335;
+    --dark: #202124;
+    --medium: #5f6368;
+    --light: #e8eaed;
+    --white: #ffffff;
+}
+
+.auth-card {
+    background-color: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.app-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.app-logo h1 {
+    color: var(--primary-color);
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.app-logo p {
+    color: var(--medium);
+    font-size: 0.9rem;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0.75rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--medium);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--primary-color);
+}
+
+.input-group {
+    margin-bottom: 1.2rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--dark);
+    font-size: 0.9rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--light);
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border 0.3s ease;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.btn {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-outline {
+    background-color: var(--white);
+    color: var(--medium);
+    border: 1px solid var(--light);
+}
+
+.btn-outline:hover {
+    background-color: var(--light);
+}
+
+.google-btn {
+    margin-top: 0.5rem;
+}
+
+.google-icon {
+    color: #4285F4;
+    font-size: 20px;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 1rem 0;
+    color: var(--medium);
+    font-size: 0.9rem;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: var(--light);
+}
+
+.divider::before {
+    margin-right: 1rem;
+}
+
+.divider::after {
+    margin-left: 1rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.text-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.text-link:hover {
+    text-decoration: underline;
+}
+
+/* Estilo para mensagens de erro */
+#message-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: 90%;
+    max-width: 400px;
+}
+
+.message {
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    animation: slide-in 0.3s ease;
+}
+
+.message-error {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.fade-out {
+    animation: fade-out 0.5s ease forwards;
+}
+
+@keyframes slide-in {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Estilos para dashboard */
+.stat-card {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #3498db;
+    margin: 10px 0;
+}
+
+.stat-label {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    margin-top: 0;
+    color: #2c3e50;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7f8c8d;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #bdc3c7;
+}
+
+.transcription-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-view, .btn-edit, .btn-delete {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+}
+
+.btn-edit {
+    background-color: #f39c12;
+}
+
+.btn-edit:hover {
+    background-color: #e67e22;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.search-bar {
+    margin-bottom: 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
     
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // Clone da resposta para cachear
-          const responseToCache = response.clone();
-          
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            })
-            .catch(error => {
-              console.warn('Erro ao atualizar cache:', error);
-            });
-            
-          return response;
-        })
-        .catch(() => {
-          // Se falhar, tenta buscar do cache
-          return caches.match(event.request)
-            .then(cachedResponse => {
-              if (cachedResponse) {
-                return cachedResponse;
-              }
-              
-              // Se o tipo de requisição for 'navigate', mostrar página offline
-              if (event.request.mode === 'navigate') {
-                return caches.match(OFFLINE_URL);
-              }
-              
-              // Para outros recursos não encontrados no cache
-              return new Response('Recurso não disponível offline', {
-                status: 503,
-                statusText: 'Service Unavailable'
-              });
-            });
-        })
-    );
-  } 
-  // Estratégia para recursos estáticos: Cache First
-  else {
-    event.respondWith(
-      caches.match(event.request)
-        .then(cachedResponse => {
-          // Retorna do cache se disponível
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          
-          // Se não estiver no cache, busca na rede
-          return fetch(event.request)
-            .then(response => {
-              // Clone da resposta para cachear
-              const responseToCache = response.clone();
-              
-              caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, responseToCache);
-                })
-                .catch(error => {
-                  console.warn('Erro ao atualizar cache:', error);
-                });
-                
-              return response;
-            })
-            .catch(error => {
-              console.error('Erro ao buscar recurso:', error);
-              
-              // Retornar uma resposta vazia para recursos não críticos
-              return new Response(null, {
-                status: 404,
-                statusText: 'Not Found'
-              });
-            });
-        })
-    );
-  }
-});
-
-// Evento para quando o app for instalado
-self.addEventListener('appinstalled', (event) => {
-  console.log('PWA foi instalado com sucesso!');
-});
-
-// Evento para sincronização em segundo plano (quando implementada)
-self.addEventListener('sync', event => {
-  if (event.tag === 'sync-transcriptions') {
-    console.log('Sincronizando transcrições pendentes...');
-    // Implementar lógica de sincronização quando necessário
-  }
-});
-
-// Evento para notificações em segundo plano (quando implementadas)
-self.addEventListener('push', event => {
-  if (event.data) {
-    const data = event.data.json();
+    .container {
+        width: 100%;
+    }
     
-    const options = {
-      body: data.body || 'Nova atualização disponível',
-      icon: './android/android-launchericon-144-144.png',
-      badge: './android/android-launchericon-48-48.png',
-      vibrate: [100, 50, 100],
-      data: {
-        url: data.url || './'
-      }
-    };
+    input[type="password"], input[type="text"], input[type="email"] {
+        width: 100%;
+    }
     
-    event.waitUntil(
-      self.registration.showNotification(data.title || 'Mapzy Vox IA', options)
-    );
-  }
-});
+    .stats-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .nav-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .transcription-actions {
+        flex-wrap: wrap;
+    }
+}
 
-// Ação ao clicar na notificação
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  
-  if (event.notification.data && event.notification.data.url) {
-    event.waitUntil(
-      clients.openWindow(event.notification.data.url)
-    );
-  }
-});
+/* Estilos de acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 
-// Verificar se há atualização do service worker a cada 6 horas
-setInterval(() => {
-  self.registration.update()
-    .then(() => console.log('Service Worker: verificação de atualização concluída'))
-    .catch(err => console.error('Erro ao verificar atualizações do Service Worker:', err));
-}, 6 * 60 * 60 * 1000);
+/* Tema escuro para quem preferir */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --light: #202124;
+        --dark: #e8eaed;
+        --white: #303134;
+        --medium: #bdc1c6;
+    }
+    
+    body {
+        background-color: #202124;
+        color: #e8eaed;
+    }
+    
+    .card, .auth-card, .stat-card, .api-key-container, .processing-options, .transcription-item {
+        background-color: #303134;
+        border-color: #5f6368;
+    }
+    
+    h1, h3, .transcription-title {
+        color: #e8eaed;
+    }
+    
+    #transc
