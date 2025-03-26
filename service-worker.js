@@ -1,5 +1,5 @@
 // Nome do cache para armazenar arquivos
-const CACHE_NAME = 'mapzyvox-cache-v1';
+const CACHE_NAME = 'mapzyvox-cache-v2'; // Incrementar versão para forçar uma atualização
 const OFFLINE_URL = './offline.html';
 
 // Lista de arquivos para serem cacheados inicialmente
@@ -20,7 +20,6 @@ const urlsToCache = [
   './js/transcription.js',
   './js/ui-controller.js',
   './js/user-auth.js',
-  './js/verificador-estrutura.js',
   './android/android-launchericon-48-48.png',
   './android/android-launchericon-72-72.png',
   './android/android-launchericon-96-96.png',
@@ -29,37 +28,50 @@ const urlsToCache = [
   './android/android-launchericon-512-512.png',
   './ios/152.png',
   './ios/180.png',
-  './ios/256.png'
+  './ios/256.png',
+  'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+  'https://fonts.googleapis.com/icon?family=Material+Icons'
 ];
 
 // Instalar o service worker e criar o cache
 self.addEventListener('install', event => {
   console.log('Service Worker instalando...');
+  
+  // Skip waiting força a ativação imediata
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Cache aberto');
-        return cache.addAll(urlsToCache);
+        // Tentativa de cache com tratamento de erro por item
+        const cachePromises = urlsToCache.map(url => {
+          return cache.add(url).catch(error => {
+            console.warn(`Falha ao cachear ${url}:`, error);
+          });
+        });
+        
+        return Promise.all(cachePromises);
       })
       .catch(error => {
-        console.error('Erro durante o cache:', error);
+        console.error('Erro durante o cache inicial:', error);
       })
   );
-  
-  // Forçar ativação imediata sem esperar por fechamento de páginas
-  self.skipWaiting();
 });
 
 // Ativar o service worker e limpar caches antigos
 self.addEventListener('activate', event => {
   console.log('Service Worker ativando...');
-  const cacheWhitelist = [CACHE_NAME];
+  
+  // Tomar controle de clientes não controlados (páginas abertas)
+  event.waitUntil(self.clients.claim());
+  
+  // Limpar caches antigos
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            // Se o cache não estiver na whitelist, remova-o
+          if (cacheName !== CACHE_NAME) {
             console.log('Removendo cache antigo:', cacheName);
             return caches.delete(cacheName);
           }
@@ -67,67 +79,160 @@ self.addEventListener('activate', event => {
       );
     }).then(() => {
       console.log('Service Worker ativado!');
-      // Tomar controle de clientes não controlados (páginas abertas)
-      return self.clients.claim();
     })
   );
 });
 
-// Interceptar as requisições de rede e usar o cache quando possível
+// Interceptar as requisições de rede com estratégia network-first para conteúdo principal
+// e cache-first para recursos estáticos
 self.addEventListener('fetch', event => {
-  // Não intercepta requisições para APIs externas
+  // Não interceptar requisições para APIs externas
   if (event.request.url.includes('api.openai.com') || 
       event.request.url.includes('firebaseio.com') ||
       event.request.url.includes('googleapis.com')) {
     return;
   }
+  
+  // Para requisições com método diferente de GET, não usar cache
+  if (event.request.method !== 'GET') {
+    return;
+  }
 
-  event.respondWith(
-    // Tenta buscar o recurso na rede
-    fetch(event.request)
-      .then(response => {
-        // Verificar se recebemos uma resposta válida
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-
-        // Clone da resposta, pois ela só pode ser usada uma vez
-        const responseToCache = response.clone();
-
-        // Atualizar o cache com a nova resposta
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            cache.put(event.request, responseToCache);
-          });
-
-        return response;
-      })
-      .catch(() => {
-        // Se falhar (provavelmente offline), buscar no cache
-        return caches.match(event.request)
-          .then(cachedResponse => {
-            // Retorna o recurso do cache se existir, ou a página offline
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            
-            // Se o tipo de requisição for 'navigate', mostrar página offline
-            if (event.request.mode === 'navigate') {
-              return caches.match(OFFLINE_URL);
-            }
-            
-            // Para outros recursos que não estão no cache e não são navegação
-            // Poderia retornar uma imagem padrão para requisições de imagem, etc.
-            return new Response('Recurso não disponível offline', {
-              status: 503,
-              statusText: 'Service Unavailable'
+  // URL da requisição para comparações
+  const requestUrl = new URL(event.request.url);
+  
+  // Estratégia para arquivos HTML e JavaScript: Network First
+  if (requestUrl.pathname.endsWith('.html') || 
+      requestUrl.pathname.endsWith('.js') || 
+      requestUrl.pathname === '/' ||
+      requestUrl.pathname === '') {
+    
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Clone da resposta para cachear
+          const responseToCache = response.clone();
+          
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            })
+            .catch(error => {
+              console.warn('Erro ao atualizar cache:', error);
             });
-          });
-      })
-  );
+            
+          return response;
+        })
+        .catch(() => {
+          // Se falhar, tenta buscar do cache
+          return caches.match(event.request)
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              
+              // Se o tipo de requisição for 'navigate', mostrar página offline
+              if (event.request.mode === 'navigate') {
+                return caches.match(OFFLINE_URL);
+              }
+              
+              // Para outros recursos não encontrados no cache
+              return new Response('Recurso não disponível offline', {
+                status: 503,
+                statusText: 'Service Unavailable'
+              });
+            });
+        })
+    );
+  } 
+  // Estratégia para recursos estáticos: Cache First
+  else {
+    event.respondWith(
+      caches.match(event.request)
+        .then(cachedResponse => {
+          // Retorna do cache se disponível
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          
+          // Se não estiver no cache, busca na rede
+          return fetch(event.request)
+            .then(response => {
+              // Clone da resposta para cachear
+              const responseToCache = response.clone();
+              
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(event.request, responseToCache);
+                })
+                .catch(error => {
+                  console.warn('Erro ao atualizar cache:', error);
+                });
+                
+              return response;
+            })
+            .catch(error => {
+              console.error('Erro ao buscar recurso:', error);
+              
+              // Retornar uma resposta vazia para recursos não críticos
+              return new Response(null, {
+                status: 404,
+                statusText: 'Not Found'
+              });
+            });
+        })
+    );
+  }
 });
 
 // Evento para quando o app for instalado
 self.addEventListener('appinstalled', (event) => {
   console.log('PWA foi instalado com sucesso!');
 });
+
+// Evento para sincronização em segundo plano (quando implementada)
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-transcriptions') {
+    console.log('Sincronizando transcrições pendentes...');
+    // Implementar lógica de sincronização quando necessário
+  }
+});
+
+// Evento para notificações em segundo plano (quando implementadas)
+self.addEventListener('push', event => {
+  if (event.data) {
+    const data = event.data.json();
+    
+    const options = {
+      body: data.body || 'Nova atualização disponível',
+      icon: './android/android-launchericon-144-144.png',
+      badge: './android/android-launchericon-48-48.png',
+      vibrate: [100, 50, 100],
+      data: {
+        url: data.url || './'
+      }
+    };
+    
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Mapzy Vox IA', options)
+    );
+  }
+});
+
+// Ação ao clicar na notificação
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  
+  if (event.notification.data && event.notification.data.url) {
+    event.waitUntil(
+      clients.openWindow(event.notification.data.url)
+    );
+  }
+});
+
+// Verificar se há atualização do service worker a cada 6 horas
+setInterval(() => {
+  self.registration.update()
+    .then(() => console.log('Service Worker: verificação de atualização concluída'))
+    .catch(err => console.error('Erro ao verificar atualizações do Service Worker:', err));
+}, 6 * 60 * 60 * 1000);
