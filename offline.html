@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapzy Vox IA - Offline</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .offline-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .app-title {
+            color: #3498db;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .app-subtitle {
+            color: #7f8c8d;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+        
+        .offline-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #e74c3c;
+        }
+        
+        .offline-message {
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .retry-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .retry-button:hover {
+            background-color: #2980b9;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #202124;
+                color: #e8eaed;
+            }
+            
+            .offline-container {
+                background-color: #303134;
+            }
+            
+            .app-title {
+                color: #4285f4;
+            }
+            
+            .app-subtitle {
+                color: #bdc1c6;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <h1 class="app-title">Mapzy Vox IA</h1>
+        <p class="app-subtitle">Transcritor e Processador de Voz por IA</p>
+        
+        <div class="offline-icon">📶</div>
+        
+        <h2>Você está offline</h2>
+        
+        <div class="offline-message">
+            <p>Parece que você está sem conexão com a internet.</p>
+            <p>O Mapzy Vox IA precisa de conexão para transcrever áudio e processar texto usando IA.</p>
+            <p>Por favor, verifique sua conexão e tente novamente.</p>
+        </div>
+        
+        <button class="retry-button" onclick="window.location.reload()">Tentar novamente</button>
+    </div>
+    
+    <script>
+        // Verificar periodicamente se a conexão foi restabelecida
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+        
+        // Adicionar manipulador de evento para o botão de tentar novamente
+        document.querySelector('.retry-button').addEventListener('click', () => {
+            window.location.reload();
+        });
+    </script>
+</body>
+</html>
