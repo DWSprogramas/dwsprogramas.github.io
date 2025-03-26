@@ -1,11 +1,14 @@
 /* Estilos globais */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Roboto', Arial, sans-serif;
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
     background-color: #f8f9fa;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
+
 button {
     padding: 10px 15px;
     margin: 5px;
@@ -18,45 +21,56 @@ button {
     transition: all 0.3s;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
 button:hover {
     background-color: #2980b9;
 }
+
 button:disabled {
     background-color: #95a5a6;
     cursor: not-allowed;
 }
+
 button.active {
     background-color: #2ecc71;
     transform: scale(1.05);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
+
 button#stopRecording {
     background-color: #e74c3c;
 }
+
 button#stopRecording:disabled {
     background-color: #95a5a6;
 }
+
 button#processText {
     background-color: #9b59b6;
 }
+
 button#processText.active {
     background-color: #8e44ad;
 }
+
 #status, #error {
     margin: 10px 0;
     padding: 10px;
     border-radius: 5px;
 }
+
 #status {
     background-color: #e6f7ff;
     border-left: 4px solid #3498db;
 }
+
 #error {
     background-color: #ffe6e6;
     color: #cc0000;
     display: none;
     border-left: 4px solid #e74c3c;
 }
+
 #transcription, #processedOutput {
     margin-top: 20px;
     padding: 15px;
@@ -67,39 +81,47 @@ button#processText.active {
     background-color: white;
     transition: all 0.3s ease;
 }
+
 .editable {
     outline: none;
     position: relative;
 }
+
 .editable:focus {
     border-color: #3498db;
     box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }
+
 .editable:empty:before {
     content: "Clique para editar...";
     color: #aaa;
     font-style: italic;
 }
+
 .editable-highlight {
     animation: highlight 2s ease;
 }
+
 @keyframes highlight {
     0% { background-color: #fff; }
     25% { background-color: #e6f7ff; }
     75% { background-color: #e6f7ff; }
     100% { background-color: #fff; }
 }
+
 .editable-indicator {
     font-size: 12px;
     color: #7f8c8d;
     margin-left: 10px;
     font-style: italic;
 }
+
 .container {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
+
 .api-key-container {
     margin-bottom: 15px;
     padding: 15px;
@@ -108,6 +130,7 @@ button#processText.active {
     background-color: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
+
 .processing-options {
     margin: 15px 0;
     padding: 15px;
@@ -116,38 +139,47 @@ button#processText.active {
     background-color: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
+
 h1, h3 {
     color: #2c3e50;
 }
+
 h3 {
     margin-top: 0;
     display: flex;
     align-items: center;
 }
+
 .hidden {
     display: none;
 }
+
 input[type="radio"] {
     margin-right: 5px;
 }
+
 label {
     cursor: pointer;
     padding: 3px 8px;
     border-radius: 3px;
     transition: background-color 0.2s;
 }
+
 label:hover {
     background-color: #f0f0f0;
 }
+
 input[type="radio"]:checked + label {
     background-color: #e6f7ff;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
+
 #recordingTime {
     font-family: monospace;
     font-weight: bold;
     color: #e74c3c;
 }
+
 input[type="password"], input[type="text"], input[type="email"] {
     padding: 8px;
     border: 1px solid #ddd;
@@ -169,6 +201,7 @@ input[type="password"], input[type="text"], input[type="email"] {
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
     z-index: 1000;
 }
+
 #pwaInstallPrompt button {
     background: white;
     color: #3498db;
@@ -737,179 +770,4 @@ body.login-page {
         color: #e8eaed;
     }
     
-    #transcription, #processedOutput {
-        background-color: #303134;
-        border-color: #5f6368;
-        color: #e8eaed;
-    }
-    
-    .editable:empty:before {
-        color: #9aa0a6;
-    }
-    
-    input[type="password"], input[type="text"], input[type="email"] {
-        background-color: #303134;
-        border-color: #5f6368;
-        color: #e8eaed;
-    }
-    
-    input[type="radio"]:checked + label {
-        background-color: #174ea6;
-    }
-    
-    .modal-content {
-        background-color: #303134;
-        color: #e8eaed;
-    }
-} 
-/* Estilos melhorados para a barra de navegação e informações do usuário */
-.nav-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    margin-bottom: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.user-avatar-container {
-    width: 40px;
-    height: 40px;
-    position: relative;
-}
-
-.user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #3498db;
-}
-
-.user-initials {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #3498db;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 18px;
-}
-
-.user-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.user-name {
-    font-weight: bold;
-    color: #2c3e50;
-    font-size: 14px;
-}
-
-.user-email {
-    color: #7f8c8d;
-    font-size: 12px;
-}
-
-.logout-button {
-    background-color: #fff;
-    color: #e74c3c;
-    border: 1px solid #e74c3c;
-    padding: 8px 15px;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: all 0.3s;
-}
-
-.logout-button:hover {
-    background-color: #e74c3c;
-    color: white;
-}
-
-/* Responsividade para dispositivos móveis */
-@media (max-width: 600px) {
-    .nav-bar {
-        flex-direction: column;
-        gap: 10px;
-        padding: 15px;
-    }
-    
-    .user-info {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .logout-button {
-        width: 100%;
-    }
-}   
-/* Estilos para o cabeçalho da aplicação */
-.app-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e8eaed;
-}
-
-.app-title {
-    color: #4285f4;
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-.app-subtitle {
-    color: #5f6368;
-    font-size: 1.1rem;
-    margin-top: 0;
-}
-
-/* Adaptação para mobile */
-@media (max-width: 600px) {
-    .app-title {
-        font-size: 2rem;
-    }
-    
-    .app-subtitle {
-        font-size: 1rem;
-    }
-}
-
-// Nome do cache para armazenar arquivos
-const CACHE_NAME = 'mapzyvox-cache-v2'; // Incrementar versão para forçar uma atualização
-const OFFLINE_URL = './offline.html';
-
-// Lista de arquivos para serem cacheados inicialmente
-const urlsToCache = [
-  './',
-  './index.html',
-  './login.html',
-  './dashboard.html',
-  './manifest.json',
-  './offline.html',
-  './css/styles.css',
-  './js/app.js',
-  './js/audio-recorder.js',
-  './js/firebase-config.js',
-  './js/register-sw.js',
-  './js/security.js',
-  './js/storage-manager.js',
-  './js/transcription.js',
-  './js/ui-controller.js',
-  './js/user-auth.js',
-  './android/android-launchericon-48-48.png',
-  './android/android-launchericon-72-72.png',
-  './android/android-launchericon-96-96.png',
-  './android/android-launchericon
+    #transc
