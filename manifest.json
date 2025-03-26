@@ -169,7 +169,62 @@
     {
       "protocol": "web+mapzyvox",
       "url": "./index.html?protocol=%s"
+    },
+    {
+      "protocol": "mailto",
+      "url": "./index.html?mail=%s"
     }
   ],
-  "capture_links": "existing-client-navigate"
+  "capture_links": "existing-client-navigate",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "widgets": [
+    {
+      "name": "Gravação Rápida",
+      "short_name": "Gravar",
+      "description": "Inicie uma gravação com um clique",
+      "tag": "quick-record",
+      "template": "quick-record-template",
+      "ms_ac_template": "widgets/quick-record.json",
+      "data": "widgets/quick-record-data.json",
+      "screenshots": [
+        {
+          "src": "./widgets/quick-record-widget.png",
+          "sizes": "540x400",
+          "label": "Widget de gravação rápida"
+        }
+      ],
+      "icons": [
+        {
+          "src": "./android/android-launchericon-96-96.png",
+          "sizes": "96x96"
+        }
+      ],
+      "auth": false,
+      "update": 86400
+    },
+    {
+      "name": "Transcrições Recentes",
+      "short_name": "Recentes",
+      "description": "Acesse suas transcrições recentes",
+      "tag": "recent-transcriptions",
+      "template": "recent-transcriptions-template",
+      "ms_ac_template": "widgets/recent-transcriptions.json",
+      "data": "widgets/recent-transcriptions-data.json",
+      "screenshots": [
+        {
+          "src": "./widgets/recent-transcriptions-widget.png",
+          "sizes": "540x400",
+          "label": "Widget de transcrições recentes"
+        }
+      ],
+      "icons": [
+        {
+          "src": "./android/android-launchericon-96-96.png",
+          "sizes": "96x96"
+        }
+      ],
+      "auth": true,
+      "update": 3600
+    }
+  ]
 }
