@@ -6,6 +6,10 @@
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(self), payment=(), usb=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
+/mapzy-ia/service-worker.js
+  Cache-Control: max-age=0
+  Content-Type: application/javascript; charset=utf-8
+
 /service-worker.js
   Cache-Control: max-age=0
   Content-Type: application/javascript; charset=utf-8
@@ -44,5 +48,9 @@
   Content-Type: font/ttf
 
 /manifest.json
+  Cache-Control: max-age=3600
+  Content-Type: application/manifest+json
+
+/mapzy-ia/manifest.json
   Cache-Control: max-age=3600
   Content-Type: application/manifest+json
