@@ -1,6 +1,6 @@
 {
-  "name": "Gravador de Áudio com Transcrição",
-  "short_name": "Transcritor",
+  "name": "Mapzy Vox IA",
+  "short_name": "Mapzy Vox",
   "description": "Aplicativo para gravar, transcrever e processar áudio usando IA",
   "start_url": "./index.html",
   "display": "standalone",
@@ -12,49 +12,136 @@
       "src": "./android/android-launchericon-48-48.png",
       "sizes": "48x48",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./android/android-launchericon-72-72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./android/android-launchericon-96-96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./android/android-launchericon-144-144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./ios/152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./android/android-launchericon-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./ios/256.png",
       "sizes": "256x256",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./android/android-launchericon-512-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./android/android-launchericon-maskable-48-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./android/android-launchericon-maskable-72-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./android/android-launchericon-maskable-96-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./android/android-launchericon-maskable-144-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./android/android-launchericon-maskable-192-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./android/android-launchericon-maskable-512-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "./screenshots/screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Tela principal do Mapzy Vox IA"
+    },
+    {
+      "src": "./screenshots/screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Transcrição de áudio em texto"
+    },
+    {
+      "src": "./screenshots/screenshot-mobile1.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Mapzy Vox IA em dispositivo móvel"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova Gravação",
+      "short_name": "Gravar",
+      "description": "Iniciar uma nova gravação de áudio",
+      "url": "./index.html?action=record",
+      "icons": [{ "src": "./android/android-launchericon-96-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Histórico",
+      "short_name": "Histórico",
+      "description": "Ver histórico de transcrições",
+      "url": "./index.html?action=history",
+      "icons": [{ "src": "./android/android-launchericon-96-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "iarc_rating_id": "",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "scope": "./",
+  "id": "mapzyvox-ia-transcriptor"
 }
