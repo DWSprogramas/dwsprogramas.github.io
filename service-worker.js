@@ -1,97 +1,108 @@
-// This is the "Offline page" service worker for Mapzy Vox IA
+// Service Worker para Mapzy Vox IA
+const CACHE_NAME = 'mapzyvox-cache-v1';
+const OFFLINE_URL = './offline.html';
 
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js');
+// Assets a serem cacheados na instalação
+const ASSETS_TO_CACHE = [
+  './',
+  './index.html',
+  './login.html',
+  './offline.html',
+  './manifest.json',
+  './css/styles.css',
+  './android/android-launchericon-192-192.png',
+  './android/android-launchericon-512-512.png'
+];
 
-const CACHE = "mapzyvox-offline-page";
-const BASE_PATH = "/mapzy-ia";
-
-// Página de fallback quando offline (corrigido - removida duplicação)
-const offlineFallbackPage = `${BASE_PATH}/offline.html`;
-
-self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-});
-
-self.addEventListener('install', async (event) => {
+// Instalar o Service Worker
+self.addEventListener('install', (event) => {
   console.log('[Service Worker] Instalando...');
-  
-  // Força a ativação imediata
   self.skipWaiting();
   
   event.waitUntil(
-    caches.open(CACHE)
+    caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[Service Worker] Adicionando página offline ao cache');
-        return cache.add(offlineFallbackPage);
-      })
-      .catch(error => {
-        console.error('[Service Worker] Erro ao adicionar página offline ao cache:', error);
+        console.log('[Service Worker] Cacheando arquivos');
+        return cache.addAll(ASSETS_TO_CACHE);
       })
   );
 });
 
+// Ativar o Service Worker
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Ativando...');
-  
-  // Tomar controle de clientes não controlados (páginas abertas)
   event.waitUntil(self.clients.claim());
+  
+  // Limpar caches antigos
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
 });
 
-if (workbox.navigationPreload.isSupported()) {
-  workbox.navigationPreload.enable();
-}
-
+// Interceptar requisições
 self.addEventListener('fetch', (event) => {
-  // Não interceptar requisições para APIs externas
+  // Não interceptar requisições para APIs
   if (event.request.url.includes('api.openai.com') || 
       event.request.url.includes('firebaseio.com') ||
       event.request.url.includes('googleapis.com')) {
     return;
   }
   
-  // Para requisições com método diferente de GET, não usar cache
-  if (event.request.method !== 'GET') {
+  // Para navegação, usar estratégia Network First
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          return response;
+        })
+        .catch(() => {
+          return caches.match(OFFLINE_URL);
+        })
+    );
     return;
   }
   
-  if (event.request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        // Tentar usar a resposta pré-carregada, se disponível
-        const preloadResp = await event.preloadResponse;
-        if (preloadResp) {
-          return preloadResp;
+  // Para outros recursos, usar Cache First
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        // Retornar do cache se disponível
+        if (cachedResponse) {
+          return cachedResponse;
         }
-
-        // Se não houver pré-carregamento, tentar rede
-        const networkResp = await fetch(event.request);
-        return networkResp;
-      } catch (error) {
-        // Se falhar, usar o cache
-        console.log('[Service Worker] Falha na rede, servindo página offline');
-        const cache = await caches.open(CACHE);
-        const cachedResp = await cache.match(offlineFallbackPage);
-        return cachedResp;
-      }
-    })());
-  }
+        
+        // Se não estiver no cache, buscar na rede
+        return fetch(event.request)
+          .then((response) => {
+            // Não cachear respostas não-ok
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+            
+            // Clonar a resposta
+            const responseToCache = response.clone();
+            
+            // Adicionar ao cache
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            
+            return response;
+          });
+      })
+  );
 });
 
-// Evento para quando o PWA for instalado
+// Evento de instalação do PWA
 self.addEventListener('appinstalled', (event) => {
   console.log('[Service Worker] App instalado');
-});
-
-// Certificar-se de que o sw.js seja encontrado pelo PWABuilder
-self.addEventListener('fetch', (event) => {
-  if (event.request.url.endsWith('sw.js') || 
-      event.request.url.endsWith('service-worker.js') || 
-      event.request.url.endsWith('pwabuilder-sw.js')) {
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => new Response('// Service Worker OK'))
-    );
-  }
 });
