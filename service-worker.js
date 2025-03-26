@@ -4,8 +4,8 @@ importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox
 
 const CACHE = "mapzyvox-offline-page";
 const BASE_PATH = "/mapzy-ia";
-const offlineFallbackPage = `${BASE_PATH}/offline.html`;
-// Página de fallback quando offline
+
+// Página de fallback quando offline (corrigido - removida duplicação)
 const offlineFallbackPage = `${BASE_PATH}/offline.html`;
 
 self.addEventListener("message", (event) => {
