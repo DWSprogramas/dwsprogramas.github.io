@@ -4,40 +4,66 @@ const firebaseConfig = {
   authDomain: "whatsstag.firebaseapp.com",
   databaseURL: "https://whatsstag-default-rtdb.firebaseio.com",
   projectId: "whatsstag",
-  storageBucket: "whatsstag.firebasestorage.app",
+  storageBucket: "whatsstag.appspot.com",
   messagingSenderId: "216266845109",
   appId: "1:216266845109:web:5741201811d4bcab6d07fc"
 };
 
 // Inicializa o Firebase
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 // Exporta os serviços específicos para usar em outros arquivos
 const auth = firebase.auth();
 const db = firebase.database();
 
+// Definir caminhos do banco de dados para evitar inconsistências
+const DB_ROOT_PATH = 'MapzyVox';
+const USERS_PATH = `${DB_ROOT_PATH}/users`;
+const TRANSCRIPTIONS_PATH = 'transcriptions';
+
+// Função para obter referência ao caminho do usuário
+function getUserRef(userId) {
+  if (!userId) {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('Tentativa de acessar dados sem usuário autenticado');
+      return null;
+    }
+    userId = user.uid;
+  }
+  return db.ref(`${USERS_PATH}/${userId}`);
+}
+
+// Função para obter referência às transcrições do usuário
+function getUserTranscriptionsRef(userId) {
+  const userRef = getUserRef(userId);
+  if (!userRef) return null;
+  return userRef.child(TRANSCRIPTIONS_PATH);
+}
+
 // Função para criar dados iniciais do usuário
 function createUserData(userId) {
+  if (!userId) {
+    console.error('ID de usuário não fornecido para createUserData');
+    return Promise.reject(new Error('ID de usuário não fornecido'));
+  }
+  
   const userData = {
     createdAt: firebase.database.ServerValue.TIMESTAMP,
+    lastLogin: firebase.database.ServerValue.TIMESTAMP,
     transcriptions: {}
   };
   
-  db.ref('MapzyVox/users/' + userId).set(userData)
+  return getUserRef(userId).set(userData)
     .then(() => {
-      console.log('Dados iniciais do usuário criados em MapzyVox');
+      console.log('Dados iniciais do usuário criados com sucesso');
+      return userData;
     })
     .catch((error) => {
-      console.error('Erro ao criar dados do usuário em MapzyVox:', error);
-      
-      // Tentar no caminho alternativo
-      db.ref('WhatssTAG/' + userId).set(userData)
-        .then(() => {
-          console.log('Dados iniciais do usuário criados em WhatssTAG');
-        })
-        .catch((error2) => {
-          console.error('Erro ao criar dados do usuário em WhatssTAG:', error2);
-        });
+      console.error('Erro ao criar dados do usuário:', error);
+      throw error;
     });
 }
 
@@ -53,39 +79,32 @@ function saveUserApiKey(apiKey) {
   console.log('Usuário autenticado:', user.uid);
   
   // Primeiro, salvar no localStorage usando o storageUtils
-  window.storageUtils.saveApiKeyLocally(apiKey);
+  if (window.storageUtils && typeof window.storageUtils.saveApiKeyLocally === 'function') {
+    window.storageUtils.saveApiKeyLocally(apiKey);
+  } else {
+    console.warn('storageUtils não disponível para salvar localmente');
+  }
   
   // Criptografar a chave usando o módulo de segurança
-  const encryptedKey = window.securityUtils.encryptApiKey(apiKey);
+  let encryptedKey = apiKey;
+  if (window.securityUtils && typeof window.securityUtils.encryptApiKey === 'function') {
+    encryptedKey = window.securityUtils.encryptApiKey(apiKey);
+  } else {
+    console.warn('securityUtils não disponível para criptografia');
+  }
   
-  // Usar o caminho compatível com suas regras de segurança
-  return db.ref('MapzyVox/users/' + user.uid).update({
+  // Salvar no Firebase
+  return getUserRef(user.uid).update({
     apiKey: encryptedKey,
     lastUpdated: firebase.database.ServerValue.TIMESTAMP
   })
   .then(() => {
     console.log('Chave API salva com sucesso');
-    alert('Chave API salva com sucesso!');
     return "Chave API salva com sucesso";
   })
   .catch((error) => {
-    console.error('Erro ao salvar chave API no caminho MapzyVox:', error);
-    
-    // Se falhar, tentar o caminho alternativo "WhatssTAG/{uid}"
-    return db.ref('WhatssTAG/' + user.uid).update({
-      apiKey: encryptedKey,
-      lastUpdated: firebase.database.ServerValue.TIMESTAMP
-    })
-    .then(() => {
-      console.log('Chave API salva com sucesso no caminho alternativo');
-      alert('Chave API salva com sucesso!');
-      return "Chave API salva com sucesso";
-    })
-    .catch((error2) => {
-      console.error('Erro ao salvar chave API no caminho alternativo:', error2);
-      alert("Erro ao salvar chave API: " + error2.message);
-      throw error2;
-    });
+    console.error('Erro ao salvar chave API:', error);
+    throw error;
   });
 }
 
@@ -97,25 +116,36 @@ function saveTranscription(transcriptionData) {
     return Promise.reject(new Error('Usuário não está logado'));
   }
   
-  // Criar um ID único para a transcrição
-  const transcriptionId = db.ref().child('MapzyVox/users/' + user.uid + '/transcriptions').push().key;
+  // Validar dados da transcrição
+  if (!transcriptionData || !transcriptionData.text) {
+    return Promise.reject(new Error('Dados de transcrição inválidos'));
+  }
+  
+  // Usar ID existente ou criar um novo
+  const transcriptionId = transcriptionData.id || 
+                         getUserTranscriptionsRef(user.uid).push().key;
   
   // Dados completos da transcrição
   const transcription = {
     id: transcriptionId,
     text: transcriptionData.text,
-    processedText: transcriptionData.processedText,
-    processingType: transcriptionData.processingType,
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
-    title: transcriptionData.title || 'Transcrição ' + new Date().toLocaleString()
+    processedText: transcriptionData.processedText || '',
+    processingType: transcriptionData.processingType || 'none',
+    createdAt: transcriptionData.createdAt || firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP,
+    title: transcriptionData.title || `Transcrição ${new Date().toLocaleString()}`
   };
   
-  // Criar uma atualização para salvar
-  const updates = {};
-  updates['MapzyVox/users/' + user.uid + '/transcriptions/' + transcriptionId] = transcription;
-  
   // Salvar no banco de dados
-  return db.ref().update(updates);
+  return getUserTranscriptionsRef(user.uid).child(transcriptionId).set(transcription)
+    .then(() => {
+      console.log('Transcrição salva com sucesso:', transcriptionId);
+      return transcription;
+    })
+    .catch(error => {
+      console.error('Erro ao salvar transcrição:', error);
+      throw error;
+    });
 }
 
 // Função para buscar todas as transcrições do usuário
@@ -126,7 +156,7 @@ function getUserTranscriptions() {
     return Promise.reject(new Error('Usuário não está logado'));
   }
   
-  return db.ref('MapzyVox/users/' + user.uid + '/transcriptions')
+  return getUserTranscriptionsRef(user.uid)
     .orderByChild('createdAt')
     .once('value')
     .then((snapshot) => {
@@ -146,7 +176,19 @@ function deleteTranscription(transcriptionId) {
     return Promise.reject(new Error('Usuário não está logado'));
   }
   
-  return db.ref('MapzyVox/users/' + user.uid + '/transcriptions/' + transcriptionId).remove();
+  if (!transcriptionId) {
+    return Promise.reject(new Error('ID de transcrição não fornecido'));
+  }
+  
+  return getUserTranscriptionsRef(user.uid).child(transcriptionId).remove()
+    .then(() => {
+      console.log('Transcrição excluída com sucesso:', transcriptionId);
+      return true;
+    })
+    .catch(error => {
+      console.error('Erro ao excluir transcrição:', error);
+      throw error;
+    });
 }
 
 // Função para atualizar uma transcrição
@@ -157,16 +199,66 @@ function updateTranscription(transcriptionId, updatedData) {
     return Promise.reject(new Error('Usuário não está logado'));
   }
   
-  return db.ref('MapzyVox/users/' + user.uid + '/transcriptions/' + transcriptionId).update(updatedData);
+  if (!transcriptionId) {
+    return Promise.reject(new Error('ID de transcrição não fornecido'));
+  }
+  
+  // Adicionar timestamp de atualização
+  const data = {
+    ...updatedData,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+  
+  return getUserTranscriptionsRef(user.uid).child(transcriptionId).update(data)
+    .then(() => {
+      console.log('Transcrição atualizada com sucesso:', transcriptionId);
+      return data;
+    })
+    .catch(error => {
+      console.error('Erro ao atualizar transcrição:', error);
+      throw error;
+    });
+}
+
+// Função para carregar a chave API do usuário
+function loadUserApiKey() {
+  const user = auth.currentUser;
+  if (!user) {
+    console.error('Usuário não está logado');
+    return Promise.reject(new Error('Usuário não está logado'));
+  }
+  
+  return getUserRef(user.uid).once('value')
+    .then(snapshot => {
+      const userData = snapshot.val();
+      if (!userData || !userData.apiKey) {
+        console.log('Chave API não encontrada para o usuário');
+        return null;
+      }
+      
+      // Descriptografar a chave
+      let apiKey = userData.apiKey;
+      if (window.securityUtils && typeof window.securityUtils.decryptApiKey === 'function') {
+        apiKey = window.securityUtils.decryptApiKey(apiKey);
+      }
+      
+      return apiKey;
+    })
+    .catch(error => {
+      console.error('Erro ao carregar chave API:', error);
+      throw error;
+    });
 }
 
 // Exportar funções para uso em outros scripts
 window.firebaseHelper = {
   auth,
   db,
+  createUserData,
   saveUserApiKey,
   saveTranscription,
   getUserTranscriptions,
   deleteTranscription,
-  updateTranscription
+  updateTranscription,
+  loadUserApiKey
 };
