@@ -1,30 +1,23 @@
 // Service Worker para Mapzy Vox IA
 const CACHE_NAME = 'mapzyvox-cache-v2';
-const OFFLINE_URL = '/mapzy-ia/offline.html';
+const OFFLINE_URL = '/offline.html';
 
 // Assets a serem cacheados na instalação
 const ASSETS_TO_CACHE = [
-  '/mapzy-ia/js/register-sw.js',
-  '/mapzy-ia/index.html',
-  './android/android-launchericon-192-192.png',
-  '/mapzy-ia/js/transcription.js',
-  '/mapzy-ia/js/security.js',
-  '/mapzy-ia/js/app.js',
-  '/mapzy-ia/js/storage-manager.js',
-  './android/android-launchericon-512-512.png',
-  './css/styles.css',
-  '/mapzy-ia/js/firebase-config.js',
-  './manifest.json',
-  '/mapzy-ia/login.html',
-  '/mapzy-ia/js/user-auth.js',
-  '/mapzy-ia/dashboard.html',
-  './ios/180.png',
-  './login.html',
-  '/mapzy-ia/offline.html',
-  '/mapzy-ia/styles.css',
-  '/mapzy-ia/js/ui-controller.js',
-  './',
-  '/mapzy-ia/js/audio-recorder.js'
+  '/index.html',
+  '/offline.html',
+  '/login.html',
+  '/dashboard.html',
+  '/js/app.js',
+  '/js/register-sw.js',
+  '/js/transcription.js',
+  '/js/audio-recorder.js',
+  '/js/firebase-config.js',
+  '/js/security.js',
+  '/js/storage-manager.js',
+  '/js/user-auth.js',
+  '/js/ui-controller.js',
+  '/styles.css'
 ];;
 
 // Instalar o Service Worker
@@ -104,7 +97,7 @@ self.addEventListener('fetch', (event) => {
                 return cachedResponse;
               }
               // Caso não encontre, tentar qualquer página cacheada
-              return caches.match('/mapzy-ia/index.html');
+              return caches.match('/index.html');
             });
         })
     );
