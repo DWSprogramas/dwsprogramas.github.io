@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <link rel="canonical" href="https://dwsprogramas.github.io/mapzy-ia/offline.html" />
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#3498db">
     <title>Mapzy Vox IA - Offline</title>
     <style>
         body {
@@ -109,13 +112,22 @@
     <script>
         // Verificar periodicamente se a conexão foi restabelecida
         window.addEventListener('online', () => {
+            console.log('Conexão restaurada! Recarregando...');
             window.location.reload();
         });
         
         // Adicionar manipulador de evento para o botão de tentar novamente
         document.querySelector('.retry-button').addEventListener('click', () => {
+            console.log('Tentando reconectar...');
             window.location.reload();
         });
+
+        // Notificar o service worker que esta página foi carregada
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'OFFLINE_PAGE_LOADED'
+            });
+        }
     </script>
 </body>
 </html>
