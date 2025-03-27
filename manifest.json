@@ -2,7 +2,7 @@
   "name": "Mapzy Vox IA",
   "short_name": "Mapzy Vox",
   "description": "Aplicativo para gravar, transcrever e processar áudio usando Inteligência Artificial",
-  "start_url": "https://dwsprogramas.github.io/mapzyvox/index.html",
+  "start_url": "https://dwsprogramas.github.io/mapzy-ia/index.html",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#3498db",
@@ -122,7 +122,7 @@
       "name": "Nova Gravação",
       "short_name": "Gravar",
       "description": "Iniciar uma nova gravação de áudio",
-      "url": "https://dwsprogramas.github.io/mapzyvox/index.html?action=record",
+      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?action=record",
       "icons": [
         {
           "src": "/mapzy-ia/android/android-launchericon-96-96.png",
@@ -134,7 +134,7 @@
       "name": "Histórico",
       "short_name": "Histórico",
       "description": "Ver histórico de transcrições",
-      "url": "https://dwsprogramas.github.io/mapzyvox/index.html?action=history",
+      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?action=history",
       "icons": [
         {
           "src": "/mapzy-ia/android/android-launchericon-96-96.png",
@@ -158,13 +158,13 @@
       "auto"
     ]
   },
-  "scope": "https://dwsprogramas.github.io/mapzyvox/",
+  "scope": "https://dwsprogramas.github.io/mapzy-ia/",
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "edge_side_panel": {
     "preferred_width": 400
   },
   "share_target": {
-    "action": "https://dwsprogramas.github.io/mapzyvox/index.html?share",
+    "action": "https://dwsprogramas.github.io/mapzy-ia/index.html?share",
     "method": "GET",
     "params": {
       "title": "title",
@@ -174,7 +174,7 @@
   },
   "file_handlers": [
     {
-      "action": "https://dwsprogramas.github.io/mapzyvox/index.html?file",
+      "action": "https://dwsprogramas.github.io/mapzy-ia/index.html?file",
       "accept": {
         "audio/*": [
           ".mp3",
@@ -188,11 +188,11 @@
   "protocol_handlers": [
     {
       "protocol": "web+mapzyvox",
-      "url": "https://dwsprogramas.github.io/mapzyvox/index.html?protocol=%s"
+      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?protocol=%s"
     },
     {
       "protocol": "mailto",
-      "url": "https://dwsprogramas.github.io/mapzyvox/index.html?mail=%s"
+      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?mail=%s"
     }
   ],
   "widgets": [
