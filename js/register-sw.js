@@ -4,7 +4,7 @@
  */
 
 // Determinar o caminho base do aplicativo
-const BASE_PATH = '/mapzy-ia';
+const BASE_PATH = '';
 
 // Configuração e registro do Service Worker
 if ('serviceWorker' in navigator) {
@@ -12,10 +12,11 @@ if ('serviceWorker' in navigator) {
     console.log('Tentando registrar o Service Worker...');
     
     // Usar o caminho correto dependendo do ambiente
-    let swPath = `${BASE_PATH}/service-worker.js`;
+    let swPath = `/service-worker.js`;
+
     
     // Registrar o service worker
-    navigator.serviceWorker.register(swPath, { scope: `${BASE_PATH}/` })
+    navigator.serviceWorker.register(swPath, { scope: '/' })
       .then(registration => {
         console.log('Service Worker registrado com sucesso!', registration.scope);
         
