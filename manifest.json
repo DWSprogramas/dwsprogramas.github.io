@@ -2,7 +2,7 @@
   "name": "Mapzy Vox IA",
   "short_name": "Mapzy Vox",
   "description": "Aplicativo para gravar, transcrever e processar áudio usando Inteligência Artificial",
-  "start_url": "https://dwsprogramas.github.io/mapzy-ia/index.html",
+  "start_url": "https://dwsprogramas.github.io/index.html",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#3498db",
@@ -10,85 +10,85 @@
   "id": "mapzyvox-ia-transcriptor",
   "icons": [
     {
-      "src": "/mapzy-ia/android/android-launchericon-48-48.png",
+      "src": "/android/android-launchericon-48-48.png",
       "sizes": "48x48",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-72-72.png",
+      "src": "/android/android-launchericon-72-72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-96-96.png",
+      "src": "/android/android-launchericon-96-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-144-144.png",
+      "src": "/android/android-launchericon-144-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/ios/152.png",
+      "src": "/ios/152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-192-192.png",
+      "src": "/android/android-launchericon-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/ios/256.png",
+      "src": "/ios/256.png",
       "sizes": "256x256",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-512-512.png",
+      "src": "/android/android-launchericon-512-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-maskable-48-48.png",
+      "src": "/android/android-launchericon-maskable-48-48.png",
       "sizes": "48x48",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-maskable-72-72.png",
+      "src": "/android/android-launchericon-maskable-72-72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-maskable-96-96.png",
+      "src": "/android/android-launchericon-maskable-96-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-maskable-144-144.png",
+      "src": "/android/android-launchericon-maskable-144-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-maskable-192-192.png",
+      "src": "/android/android-launchericon-maskable-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/mapzy-ia/android/android-launchericon-maskable-512-512.png",
+      "src": "/android/android-launchericon-maskable-512-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -96,21 +96,21 @@
   ],
   "screenshots": [
     {
-      "src": "/mapzy-ia/screenshots/screenshot1.png",
+      "src": "/screenshots/screenshot1.png",
       "sizes": "1280x720",
       "type": "image/png",
       "platform": "wide",
       "label": "Tela principal do Mapzy Vox IA"
     },
     {
-      "src": "/mapzy-ia/screenshots/screenshot2.png",
+      "src": "/screenshots/screenshot2.png",
       "sizes": "1280x720",
       "type": "image/png",
       "platform": "wide",
       "label": "Transcrição de áudio em texto"
     },
     {
-      "src": "/mapzy-ia/screenshots/screenshot-mobile1.png",
+      "src": "/screenshots/screenshot-mobile1.png",
       "sizes": "750x1334",
       "type": "image/png",
       "platform": "narrow",
@@ -122,7 +122,7 @@
       "name": "Nova Gravação",
       "short_name": "Gravar",
       "description": "Iniciar uma nova gravação de áudio",
-      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?action=record",
+      "url": "https://dwsprogramas.github.io/index.html?action=record",
       "icons": [
         {
           "src": "/mapzy-ia/android/android-launchericon-96-96.png",
@@ -134,7 +134,7 @@
       "name": "Histórico",
       "short_name": "Histórico",
       "description": "Ver histórico de transcrições",
-      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?action=history",
+      "url": "https://dwsprogramas.github.io/index.html?action=history",
       "icons": [
         {
           "src": "/mapzy-ia/android/android-launchericon-96-96.png",
@@ -158,13 +158,13 @@
       "auto"
     ]
   },
-  "scope": "https://dwsprogramas.github.io/mapzy-ia/",
+  "scope": "https://dwsprogramas.github.io/",
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "edge_side_panel": {
     "preferred_width": 400
   },
   "share_target": {
-    "action": "https://dwsprogramas.github.io/mapzy-ia/index.html?share",
+    "action": "https://dwsprogramas.github.io/index.html?share",
     "method": "GET",
     "params": {
       "title": "title",
@@ -174,7 +174,7 @@
   },
   "file_handlers": [
     {
-      "action": "https://dwsprogramas.github.io/mapzy-ia/index.html?file",
+      "action": "https://dwsprogramas.github.io/index.html?file",
       "accept": {
         "audio/*": [
           ".mp3",
@@ -188,11 +188,11 @@
   "protocol_handlers": [
     {
       "protocol": "web+mapzyvox",
-      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?protocol=%s"
+      "url": "https://dwsprogramas.github.io/index.html?protocol=%s"
     },
     {
       "protocol": "mailto",
-      "url": "https://dwsprogramas.github.io/mapzy-ia/index.html?mail=%s"
+      "url": "https://dwsprogramas.github.io/index.html?mail=%s"
     }
   ],
   "widgets": [
@@ -206,14 +206,14 @@
       "data": "widgets/quick-record-data.json",
       "screenshots": [
         {
-          "src": "/mapzy-ia/widgets/quick-record-widget.png",
+          "src": "/widgets/quick-record-widget.png",
           "sizes": "540x400",
           "label": "Widget de gravação rápida"
         }
       ],
       "icons": [
         {
-          "src": "/mapzy-ia/android/android-launchericon-96-96.png",
+          "src": "/android/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ],
@@ -230,14 +230,14 @@
       "data": "widgets/recent-transcriptions-data.json",
       "screenshots": [
         {
-          "src": "/mapzy-ia/widgets/recent-transcriptions-widget.png",
+          "src": "/widgets/recent-transcriptions-widget.png",
           "sizes": "540x400",
           "label": "Widget de transcrições recentes"
         }
       ],
       "icons": [
         {
-          "src": "/mapzy-ia/android/android-launchericon-96-96.png",
+          "src": "/android/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ],
