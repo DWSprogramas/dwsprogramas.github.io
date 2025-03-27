@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script>
+    if (location.protocol === 'http:' && !location.hostname.includes('localhost')) {
+      location.replace(`https://${location.hostname}${location.pathname}${location.search}${location.hash}`);
+    }
+  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
