@@ -1,29 +1,52 @@
 // Funções de autenticação de usuário
 
-// Verificar o estado de autenticação atual
 function checkAuthState(callback) {
   console.log("Verificando estado de autenticação...");
-  
+
   firebase.auth().onAuthStateChanged((user) => {
     console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
-    
-    // Se estiver em uma página que requer autenticação e não houver usuário autenticado
-    if (!user && !window.location.pathname.includes('login.html')) {
-      console.log("Redirecionando para a página de login...");
-      window.location.href = './login.html';
+
+    const currentPath = window.location.pathname;
+    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login') || currentPath.endsWith('/login.html');
+
+    // Se já está redirecionando, evita múltiplas ações
+    if (window._isRedirecting) {
+      console.log("Redirecionamento já em andamento. Abortando.");
+      return;
     }
-    
-    // Se estiver na página de login e houver usuário autenticado
-    if (user && window.location.pathname.includes('login.html')) {
-      console.log("Usuário já autenticado. Redirecionando para a página principal...");
-      window.location.href = './index.html';
+
+    // Se o usuário NÃO está autenticado e NÃO está na página de login
+    if (!user && !isLoginPage) {
+      window._isRedirecting = true;
+      console.log("Usuário não autenticado. Redirecionando para login...");
+      if (typeof callback === 'function') callback(null);
+      window.location.replace('./login.html');
+      return;
     }
-    
-    if (callback) {
-      callback(user);
+
+    // Se o usuário ESTÁ autenticado e ESTÁ na página de login
+    if (user && isLoginPage) {
+      window._isRedirecting = true;
+      console.log("Usuário autenticado na tela de login. Redirecionando para index...");
+      window.location.replace('./index.html?action=record');
+      return;
+    }
+
+    // Se o usuário ESTÁ autenticado e NÃO está na tela de login
+    if (user && !isLoginPage) {
+      console.log("Usuário autenticado e fora da tela de login. Prosseguindo...");
+      if (typeof callback === 'function') callback(user);
+      return;
+    }
+
+    // Se o usuário NÃO está autenticado e ESTÁ na tela de login
+    if (!user && isLoginPage) {
+      console.log("Usuário não autenticado, mas na tela de login. Aguardando login...");
+      if (typeof callback === 'function') callback(null);
     }
   });
 }
+
 
 // Atualizar informações do usuário na interface
 function updateUserInfo(user) {
