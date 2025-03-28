@@ -35,10 +35,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initPWA();
   
   // Remover itens expirados do armazenamento
-  if (window.storageUtils && typeof window.storageUtils.removeExpiredItems === 'function') {
-    window.storageUtils.removeExpiredItems().catch(err => {
-      console.warn('Erro ao remover itens expirados:', err);
-    });
+  try {
+    if (window.storageUtils && typeof window.storageUtils.removeExpiredItems === 'function') {
+      // Verificar se a função retorna uma Promise antes de usar .catch
+      const result = window.storageUtils.removeExpiredItems();
+      if (result && typeof result.catch === 'function') {
+        result.catch(err => {
+          console.warn('Erro ao remover itens expirados:', err);
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao remover itens expirados:', err);
   }
   
   // Verificar autenticação primeiro, antes de inicializar outros módulos
@@ -65,35 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Verificar se há parâmetros na URL
       handleUrlParams();
-      
-      // Anexar funções de diagnóstico à janela para debugging (apenas em ambiente de desenvolvimento)
-      if (process.env.NODE_ENV !== 'production') {
-        window.debug = {
-          checkStorageQuota: window.storageUtils?.checkStorageQuota,
-          getStorageUsage: window.storageUtils?.getStorageUsage,
-          clearUserStorage: window.storageUtils?.clearUserStorage,
-          appState: window.appState,
-          verifyHttps: () => {
-            const allLinks = Array.from(document.querySelectorAll('a[href]'));
-            const allScripts = Array.from(document.querySelectorAll('script[src]'));
-            const allStyles = Array.from(document.querySelectorAll('link[href]'));
-            const allImages = Array.from(document.querySelectorAll('img[src]'));
-            
-            const httpLinks = allLinks.filter(a => a.href.startsWith('http:'));
-            const httpScripts = allScripts.filter(s => s.src.startsWith('http:'));
-            const httpStyles = allStyles.filter(l => l.href.startsWith('http:'));
-            const httpImages = allImages.filter(i => i.src.startsWith('http:'));
-            
-            return {
-              httpLinks,
-              httpScripts,
-              httpStyles,
-              httpImages,
-              hasHttpContent: httpLinks.length > 0 || httpScripts.length > 0 || httpStyles.length > 0 || httpImages.length > 0
-            };
-          }
-        };
-      }
     }
     
     console.log('Aplicação inicializada.');
@@ -146,7 +125,10 @@ function initUIComponents() {
         
         // Adicionar classe 'active' na aba clicada
         button.classList.add('active');
-        document.getElementById(`${tabName}Tab`).classList.add('active');
+        const tabContent = document.getElementById(`${tabName}Tab`);
+        if (tabContent) {
+          tabContent.classList.add('active');
+        }
       });
     });
   }
@@ -189,16 +171,28 @@ function initPWA() {
     window.appState.deferredInstallPrompt = null;
     hideInstallPrompt();
     
-    // Registrar analítica ou mostrar mensagem de sucesso
-    if (typeof gtag === 'function') {
-      gtag('event', 'pwa_installed');
-    }
-    
     // Exibir mensagem temporária
     showTemporaryMessage('Aplicativo instalado com sucesso!');
   });
   
   console.log('Recursos de PWA inicializados.');
+}
+
+/**
+ * Verificar o estado de autenticação
+ */
+function checkAuthState(callback) {
+  // Verificar se o Firebase Auth está disponível
+  if (!window.firebase || !window.firebase.auth) {
+    console.error('Firebase Auth não está disponível');
+    return;
+  }
+  
+  window.firebase.auth().onAuthStateChanged((user) => {
+    if (callback && typeof callback === 'function') {
+      callback(user);
+    }
+  });
 }
 
 /**
@@ -318,6 +312,45 @@ function handleOnlineStatus() {
 }
 
 /**
+ * Exibir uma mensagem temporária
+ */
+function showTemporaryMessage(message, duration = 3000) {
+  // Tentar criar o elemento de mensagem se não existir
+  let messageElement = document.getElementById('temp-message');
+  if (!messageElement) {
+    messageElement = document.createElement('div');
+    messageElement.id = 'temp-message';
+    messageElement.style.position = 'fixed';
+    messageElement.style.bottom = '20px';
+    messageElement.style.left = '50%';
+    messageElement.style.transform = 'translateX(-50%)';
+    messageElement.style.backgroundColor = '#333';
+    messageElement.style.color = 'white';
+    messageElement.style.padding = '10px 20px';
+    messageElement.style.borderRadius = '5px';
+    messageElement.style.zIndex = '9999';
+    messageElement.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+    messageElement.style.textAlign = 'center';
+    messageElement.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(messageElement);
+  }
+  
+  // Definir a mensagem
+  messageElement.textContent = message;
+  messageElement.style.opacity = '1';
+  
+  // Remover a mensagem após o tempo definido
+  setTimeout(() => {
+    messageElement.style.opacity = '0';
+    setTimeout(() => {
+      if (messageElement.parentNode) {
+        messageElement.parentNode.removeChild(messageElement);
+      }
+    }, 300);
+  }, duration);
+}
+
+/**
  * Processar operações pendentes após reconexão
  */
 function processPendingOperations() {
@@ -389,4 +422,80 @@ function processPendingOperations() {
         showTemporaryMessage(`Algumas operações não puderam ser sincronizadas. Tentando novamente mais tarde.`);
       }
     });
+}
+
+/**
+ * Carregar a chave API do usuário
+ */
+function loadApiKey() {
+  try {
+    // Primeiro tentar carregar do localStorage
+    const savedApiKey = localStorage.getItem('openai_api_key');
+    
+    // Verificar se storageUtils está disponível
+    if (window.storageUtils && typeof window.storageUtils.loadApiKey === 'function') {
+      window.storageUtils.loadApiKey()
+        .then(apiKey => {
+          console.log('Chave API carregada com sucesso');
+        })
+        .catch(error => {
+          console.warn('Erro ao carregar chave API:', error);
+        });
+    } else if (savedApiKey) {
+      console.log('Chave API carregada do localStorage');
+    } else {
+      console.warn('Não foi possível carregar a chave API');
+    }
+  } catch (error) {
+    console.warn('Erro ao carregar chave API:', error);
+  }
+}
+
+/**
+ * Inicializar gravador de áudio
+ */
+function initAudioRecorder() {
+  if (typeof window.initAudioRecorder === 'function') {
+    window.initAudioRecorder();
+  } else {
+    console.warn('Função initAudioRecorder não encontrada');
+  }
+}
+
+/**
+ * Inicializar transcrição
+ */
+function initTranscription() {
+  if (typeof window.transcriptionUtils !== 'undefined' && typeof window.transcriptionUtils.initTranscription === 'function') {
+    window.transcriptionUtils.initTranscription();
+  } else {
+    console.warn('Função initTranscription não encontrada');
+  }
+}
+
+/**
+ * Tratar parâmetros da URL
+ */
+function handleUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // Se houver um ID na URL, carregar a transcrição
+  const transcriptionId = urlParams.get('id');
+  if (transcriptionId && typeof window.transcriptionUtils !== 'undefined' && typeof window.transcriptionUtils.loadTranscriptionDetails === 'function') {
+    window.transcriptionUtils.loadTranscriptionDetails(transcriptionId);
+  }
+  
+  // Se houver uma ação na URL, executá-la
+  const action = urlParams.get('action');
+  if (action === 'record') {
+    const recordTab = document.querySelector('.tab[data-tab="recorder"]');
+    if (recordTab) {
+      recordTab.click();
+    }
+  } else if (action === 'history') {
+    const historyTab = document.querySelector('.tab[data-tab="history"]');
+    if (historyTab) {
+      historyTab.click();
+    }
+  }
 }
