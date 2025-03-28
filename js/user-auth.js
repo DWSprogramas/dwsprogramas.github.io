@@ -1,29 +1,41 @@
 // Funções de autenticação de usuário
 
-// Verificar o estado de autenticação atual
 function checkAuthState(callback) {
   console.log("Verificando estado de autenticação...");
-  
+
   firebase.auth().onAuthStateChanged((user) => {
     console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
-    
-    // Se estiver em uma página que requer autenticação e não houver usuário autenticado
-    if (!user && !window.location.pathname.includes('login.html')) {
-      console.log("Redirecionando para a página de login...");
-      window.location.href = './login.html';
+
+    const currentPath = window.location.pathname;
+    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login');
+    const isHomePage = currentPath.includes('index.html') || currentPath.endsWith('/') || currentPath.endsWith('/index');
+
+    // Se o usuário não está autenticado e não está na tela de login
+    if (!user && !isLoginPage) {
+      if (!window._isRedirecting) {
+        window._isRedirecting = true;
+        console.log("Redirecionando para a página de login...");
+        window.location.href = './login.html';
+      }
+      return;
     }
-    
-    // Se estiver na página de login e houver usuário autenticado
-    if (user && window.location.pathname.includes('login.html')) {
-      console.log("Usuário já autenticado. Redirecionando para a página principal...");
-      window.location.href = './index.html';
+
+    // Se o usuário está autenticado e está na tela de login
+    if (user && isLoginPage) {
+      if (!window._isRedirecting) {
+        window._isRedirecting = true;
+        console.log("Usuário já autenticado. Redirecionando para a página principal...");
+        window.location.href = './index.html';
+      }
+      return;
     }
-    
+
     if (callback) {
       callback(user);
     }
   });
 }
+
 
 // Atualizar informações do usuário na interface
 function updateUserInfo(user) {
