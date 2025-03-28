@@ -26,84 +26,78 @@
     .splash {
       max-width: 300px;
     }
+    .record-container {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .record-container.active {
+      display: flex;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <div class="splash">
+  <div class="splash" id="splash">
     <h1>MapzyVox IA</h1>
     <p>Carregando aplicação...</p>
   </div>
 
+  <div class="record-container" id="recordContainer">
+    <h2>Gravador de Áudio</h2>
+    <button onclick="alert('Gravação iniciada!')">Iniciar Gravação</button>
+    <button onclick="alert('Gravação finalizada!')">Finalizar Gravação</button>
+  </div>
+
   <script src="/js/register-sw.js"></script>
   <script src="/js/user-auth.js"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(() => {
-      // Após o service worker estar pronto, verifica autenticação
-      console.log("Executando checkAuthState dentro do index.html");
-      checkAuthState((user) => {
-        console.log("Autenticação verificada após SW. Usuário:", user?.uid || "não logado");
+  <script>
+    function mostrarGravador() {
+      document.getElementById("splash").style.display = "none";
+      document.getElementById("recordContainer").classList.add("active");
+    }
 
-        // Se há parâmetros como ?action=record ou ?action=history, mantém na mesma página
-        const urlParams = new URLSearchParams(window.location.search);
-        const action = urlParams.get('action');
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        console.log("Executando checkAuthState dentro do index.html (SW pronto)");
+        checkAuthState((user) => {
+          console.log("Autenticação verificada após SW. Usuário:", user?.uid || "não logado");
 
-        if (!action) {
-          // Sem ação específica, ir para dashboard
-          window.location.href = "./dashboard.html";
-        } else {
-          // Mantém na index.html com ação
-          console.log("Mantendo na index.html para ação:", action);
-        }
+          const urlParams = new URLSearchParams(window.location.search);
+          const action = urlParams.get('action');
+
+          if (!action) {
+            window.location.href = "./dashboard.html";
+          } else if (action === "record") {
+            mostrarGravador();
+          } else {
+            console.log("Mantendo na index.html para ação:", action);
+          }
+        });
       });
-    });
-  } else {
-    // Se SW não estiver disponível, verifica auth imediatamente
-    console.log("Executando checkAuthState dentro do index.html");
-    checkAuthState((user) => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const action = urlParams.get('action');
-
-      if (!action) {
-        window.location.href = "./dashboard.html";
-      } else {
-        console.log("Mantendo na index.html com ação:", action);
-      }
-    });
-  }
-</script>
-<script src="/js/register-sw.js"></script>
-<script src="/js/user-auth.js"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(() => {
+    } else {
+      console.log("Executando checkAuthState dentro do index.html (sem SW)");
       checkAuthState((user) => {
-        console.log("Autenticação verificada após SW. Usuário:", user?.uid || "não logado");
-
         const urlParams = new URLSearchParams(window.location.search);
         const action = urlParams.get('action');
 
         if (!action) {
           window.location.href = "./dashboard.html";
+        } else if (action === "record") {
+          mostrarGravador();
         } else {
-          console.log("Mantendo na index.html para ação:", action);
+          console.log("Mantendo na index.html com ação:", action);
         }
       });
-    });
-  } else {
-    checkAuthState((user) => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const action = urlParams.get('action');
-
-      if (!action) {
-        window.location.href = "./dashboard.html";
-      } else {
-        console.log("Mantendo na index.html com ação:", action);
-      }
-    });
-  }
-</script>
-
-
+    }
+  </script>
 </body>
 </html>
