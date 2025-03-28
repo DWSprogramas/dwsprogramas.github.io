@@ -1,72 +1,29 @@
 // Funções de autenticação de usuário
 
+// Verificar o estado de autenticação atual
 function checkAuthState(callback) {
   console.log("Verificando estado de autenticação...");
-
+  
   firebase.auth().onAuthStateChanged((user) => {
     console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
-
-    const currentPath = window.location.pathname;
-    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login') || currentPath.endsWith('/login.html');
-
-    if (window._isRedirecting) {
-      console.log("Redirecionamento já em andamento. Abortando.");
-      return;
+    
+    // Se estiver em uma página que requer autenticação e não houver usuário autenticado
+    if (!user && !window.location.pathname.includes('login.html')) {
+      console.log("Redirecionando para a página de login...");
+      window.location.href = './login.html';
     }
-
-    // 🔴 Usuário não autenticado fora da página de login
-    if (!user && !isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Redirecionando para login...");
-      if (typeof callback === 'function') callback(null);
-      window.location.replace('./login.html');
-      return;
+    
+    // Se estiver na página de login e houver usuário autenticado
+    if (user && window.location.pathname.includes('login.html')) {
+      console.log("Usuário já autenticado. Redirecionando para a página principal...");
+      window.location.href = './index.html';
     }
-
-    // 🟢 Usuário autenticado na página de login
-    if (user && isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Usuário autenticado na página de login. Redirecionando para index...");
-      window.location.replace('./index.html');
-      return;
-    }
-
-    // ✅ Situação normal: usuário autenticado e página válida
-    if (user && !isLoginPage) {
-      console.log("Usuário autenticado, permanecendo na página atual.");
-      if (typeof callback === 'function') callback(user);
-      return;
-    }
-
-    // ⚪ Usuário não autenticado mas está na tela de login
-    if (!user && isLoginPage) {
-      console.log("Usuário não autenticado na tela de login.");
-      if (typeof callback === 'function') callback(null);
-    }
-  });
-}
-
-
-
-    // ✅ Usuário autenticado e ainda na tela de login
-    if (user && isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Usuário autenticado. Redirecionando para index...");
-      setTimeout(() => {
-        window.location.href = './index.html';
-      }, 100); // pequeno delay
-      return;
-    }
-
-    // 🔁 Nenhum redirecionamento necessário
+    
     if (callback) {
       callback(user);
     }
   });
 }
-
-
-
 
 // Atualizar informações do usuário na interface
 function updateUserInfo(user) {
@@ -135,11 +92,11 @@ function loginWithEmail(email, password) {
   }
   
   firebase.auth().signInWithEmailAndPassword(email, password)
-  .then((userCredential) => {
-    console.log('Login com email bem-sucedido:', userCredential.user.uid);
-    // ✅ Não redireciona aqui. O checkAuthState vai cuidar disso.
-  })
-
+    .then((userCredential) => {
+      // Login bem-sucedido
+      console.log('Login com email bem-sucedido:', userCredential.user.uid);
+      window.location.href = './index.html';
+    })
     .catch((error) => {
       console.error('Erro de login com email:', error);
       
@@ -179,19 +136,22 @@ function loginWithGoogle() {
     googleButton.disabled = true;
   }
   
-firebase.auth().signInWithPopup(provider)
-  .then((result) => {
-    const user = result.user;
-    console.log('Login com Google bem-sucedido:', user.uid);
-
-    const isNewUser = result.additionalUserInfo.isNewUser;
-    if (isNewUser) {
-      createUserData(user.uid);
-    }
-
-    // ✅ Não redireciona aqui. O checkAuthState vai cuidar disso.
-  })
-
+  firebase.auth().signInWithPopup(provider)
+    .then((result) => {
+      // Login bem-sucedido
+      const user = result.user;
+      console.log('Login com Google bem-sucedido:', user.uid);
+      
+      // Verificar se é um novo usuário
+      const isNewUser = result.additionalUserInfo.isNewUser;
+      if (isNewUser) {
+        // Criar dados iniciais do usuário
+        createUserData(user.uid);
+      }
+      
+      // Redirecionar para a página principal
+      window.location.href = './index.html';
+    })
     .catch((error) => {
       console.error('Erro de login com Google:', error);
       
