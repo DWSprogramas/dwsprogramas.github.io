@@ -938,7 +938,7 @@ deleteTranscriptionBtn.addEventListener('click', () => {
             <div class="sidebar">
                 <ul class="sidebar-menu">
                     <li><a href="#" class="active" onclick="showDashboard()">Dashboard</a></li>
-                    <li><a href="index.html">Nova Gravação</a></li>
+					<li><a href="index.html?action=record">Nova Gravação</a></li>
                     <li><a href="#" onclick="showAllTranscriptions()">Todas as Transcrições</a></li>
                     <li><a href="#" onclick="showSettings()">Configurações</a></li>
                 </ul>
@@ -971,7 +971,7 @@ deleteTranscriptionBtn.addEventListener('click', () => {
                             <div class="empty-state-icon">📝</div>
                             <p>Você ainda não tem transcrições.</p>
                             <p>Vamos começar gravando uma!</p>
-                            <a href="index.html" class="button">Nova Gravação</a>
+                            <a href="index.html?action=record" class="button">Nova Gravação</a>
                         </div>
                         <ul id="recentTranscriptions" class="transcription-list">
                             <!-- Preenchido via JavaScript -->
