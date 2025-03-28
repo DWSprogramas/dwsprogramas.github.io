@@ -112,11 +112,11 @@ function loginWithEmail(email, password) {
   }
   
   firebase.auth().signInWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      // Login bem-sucedido
-      console.log('Login com email bem-sucedido:', userCredential.user.uid);
-      window.location.href = './index.html';
-    })
+  .then((userCredential) => {
+    console.log('Login com email bem-sucedido:', userCredential.user.uid);
+    // ✅ Não redireciona aqui. O checkAuthState vai cuidar disso.
+  })
+
     .catch((error) => {
       console.error('Erro de login com email:', error);
       
@@ -156,22 +156,19 @@ function loginWithGoogle() {
     googleButton.disabled = true;
   }
   
-  firebase.auth().signInWithPopup(provider)
-    .then((result) => {
-      // Login bem-sucedido
-      const user = result.user;
-      console.log('Login com Google bem-sucedido:', user.uid);
-      
-      // Verificar se é um novo usuário
-      const isNewUser = result.additionalUserInfo.isNewUser;
-      if (isNewUser) {
-        // Criar dados iniciais do usuário
-        createUserData(user.uid);
-      }
-      
-      // Redirecionar para a página principal
-      window.location.href = './index.html';
-    })
+firebase.auth().signInWithPopup(provider)
+  .then((result) => {
+    const user = result.user;
+    console.log('Login com Google bem-sucedido:', user.uid);
+
+    const isNewUser = result.additionalUserInfo.isNewUser;
+    if (isNewUser) {
+      createUserData(user.uid);
+    }
+
+    // ✅ Não redireciona aqui. O checkAuthState vai cuidar disso.
+  })
+
     .catch((error) => {
       console.error('Erro de login com Google:', error);
       
