@@ -1,45 +1,107 @@
-function checkAuthState(callback) {
-  console.log("Verificando estado de autenticação...");
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4CAF50" />
+  <title>MapzyVox IA</title>
 
-  firebase.auth().onAuthStateChanged((user) => {
-    console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
 
-    const currentPath = window.location.pathname;
-    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login') || currentPath.endsWith('/login.html');
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f0f0f0;
+      text-align: center;
+    }
+    .splash {
+      max-width: 300px;
+    }
+    .record-container {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .record-container.active {
+      display: flex;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="splash" id="splash">
+    <h1>MapzyVox IA</h1>
+    <p>Carregando aplicação...</p>
+  </div>
 
-    if (window._isRedirecting) {
-      console.log("Redirecionamento já em andamento. Abortando.");
-      return;
+  <div class="record-container" id="recordContainer">
+    <h2>Gravador de Áudio</h2>
+    <button onclick="alert('Gravação iniciada!')">Iniciar Gravação</button>
+    <button onclick="alert('Gravação finalizada!')">Finalizar Gravação</button>
+  </div>
+
+  <script src="/js/register-sw.js"></script>
+  <script src="/js/user-auth.js"></script>
+  <script>
+    function mostrarGravador() {
+      document.getElementById("splash").style.display = "none";
+      document.getElementById("recordContainer").classList.add("active");
     }
 
-    // Se o usuário não está autenticado e não está na tela de login
-    if (!user && !isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Redirecionando para a página de login...");
-      if (typeof callback === 'function') callback(null); // garante que index não trave
-      window.location.replace('./login.html');
-      return;
+    function iniciarApp() {
+      console.log("Iniciando verificação de autenticação...");
+      checkAuthState((user) => {
+        console.log("Callback do checkAuthState executado.");
+        console.log("Usuário autenticado:", user?.uid || "não logado");
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+
+        if (!action) {
+          window.location.href = "./dashboard.html";
+        } else if (action === "record") {
+          mostrarGravador();
+        } else {
+          console.log("Mantendo na index.html para ação:", action);
+        }
+      });
     }
 
-    // Se o usuário está autenticado e está na tela de login
-    if (user && isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Usuário já autenticado. Redirecionando para a página principal...");
-      window.location.replace('./index.html');
-      return;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        console.log("Service Worker pronto. Iniciando app...");
+        iniciarApp();
+      });
+    } else {
+      console.log("Sem Service Worker. Iniciando app diretamente...");
+      iniciarApp();
     }
 
-    // Se o usuário está autenticado e não está na tela de login
-    if (user && !isLoginPage) {
-      console.log("Usuário autenticado, permanecendo na página atual.");
-      if (typeof callback === 'function') callback(user);
-      return;
-    }
+    // Fallback visual após 7 segundos
+    setTimeout(() => {
+      const splash = document.getElementById("splash");
+      if (splash && splash.style.display !== "none") {
+        splash.innerHTML += "<p style='color:red'>Tempo limite excedido. Verifique conexão ou autenticação.</p>";
+      }
+    }, 7000);
+  </script>
+</body>
+</html>
 
-    // Usuário não autenticado, mas está na tela de login
-    if (!user && isLoginPage) {
-      console.log("Usuário não autenticado na tela de login.");
-      if (typeof callback === 'function') callback(null);
-    }
-  });
-}
