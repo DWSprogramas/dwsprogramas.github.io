@@ -608,3 +608,24 @@ window.appIndex = {
   updateStats,
   showApp
 };
+
+// Ativar tooltips e interações
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function() {
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// Animação de carregamento suave
+window.addEventListener('load', () => {
+    document.querySelectorAll('.loader').forEach(loader => {
+        loader.style.animation = "spin 1s linear infinite";
+    });
+});
+
+// Animações CSS
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
