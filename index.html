@@ -26,86 +26,25 @@
     .splash {
       max-width: 300px;
     }
-    .record-container {
-      display: none;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    .record-container.active {
-      display: flex;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 1rem;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
-  <div class="splash" id="splash">
+  <div class="splash">
     <h1>MapzyVox IA</h1>
     <p>Carregando aplicação...</p>
   </div>
 
-  <div class="record-container" id="recordContainer">
-    <h2>Gravador de Áudio</h2>
-    <button onclick="alert('Gravação iniciada!')">Iniciar Gravação</button>
-    <button onclick="alert('Gravação finalizada!')">Finalizar Gravação</button>
-  </div>
-
-  <script src="js/register-sw.js"></script>
-  <script src="js/user-auth.js"></script>
+  <script src="/js/register-sw.js"></script>
   <script>
-    function mostrarGravador() {
-      document.getElementById("splash").style.display = "none";
-      document.getElementById("recordContainer").classList.add("active");
-    }
-
-    function iniciarApp() {
-      console.log("Iniciando verificação de autenticação...");
-      checkAuthState((user) => {
-        console.log("Callback do checkAuthState executado.");
-        console.log("Usuário autenticado:", user?.uid || "não logado");
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const action = urlParams.get('action');
-
-        if (!action) {
-          window.location.href = "./dashboard.html";
-        } else if (action === "record") {
-          mostrarGravador();
-        } else {
-          console.log("Mantendo na index.html para ação:", action);
-        }
-      });
-    }
-
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('js/register-sw.js')
-        .then(() => {
-          console.log("Service Worker registrado. Iniciando app...");
-          iniciarApp();
-        })
-        .catch((err) => {
-          console.warn("Service Worker não pôde ser registrado:", err);
-          iniciarApp();
-        });
+      navigator.serviceWorker.ready.then(() => {
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 500);
+      });
     } else {
-      console.log("Sem Service Worker. Iniciando app diretamente...");
-      iniciarApp();
+      window.location.href = "login.html";
     }
-
-    // Fallback visual após 7 segundos
-    setTimeout(() => {
-      const splash = document.getElementById("splash");
-      if (splash && splash.style.display !== "none") {
-        splash.innerHTML += "<p style='color:red'>Tempo limite excedido. Verifique conexão ou autenticação.</p>";
-      }
-    }, 7000);
   </script>
 </body>
 </html>
