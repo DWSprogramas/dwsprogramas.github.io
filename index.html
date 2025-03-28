@@ -65,27 +65,10 @@
       document.getElementById("recordContainer").classList.add("active");
     }
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        console.log("Executando checkAuthState dentro do index.html (SW pronto)");
-        checkAuthState((user) => {
-          console.log("Autenticação verificada após SW. Usuário:", user?.uid || "não logado");
-
-          const urlParams = new URLSearchParams(window.location.search);
-          const action = urlParams.get('action');
-
-          if (!action) {
-            window.location.href = "./dashboard.html";
-          } else if (action === "record") {
-            mostrarGravador();
-          } else {
-            console.log("Mantendo na index.html para ação:", action);
-          }
-        });
-      });
-    } else {
-      console.log("Executando checkAuthState dentro do index.html (sem SW)");
+    function iniciarApp() {
       checkAuthState((user) => {
+        console.log("Usuário autenticado:", user?.uid || "não logado");
+
         const urlParams = new URLSearchParams(window.location.search);
         const action = urlParams.get('action');
 
@@ -94,9 +77,19 @@
         } else if (action === "record") {
           mostrarGravador();
         } else {
-          console.log("Mantendo na index.html com ação:", action);
+          console.log("Mantendo na index.html para ação:", action);
         }
       });
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        console.log("Service Worker pronto. Iniciando app...");
+        iniciarApp();
+      });
+    } else {
+      console.log("Sem Service Worker. Iniciando app diretamente...");
+      iniciarApp();
     }
   </script>
 </body>
