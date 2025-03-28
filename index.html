@@ -1,4 +1,875 @@
-<!DOCTYPE html>
+<script>
+    // Elementos do DOM
+    const splash = document.getElementById('splash');
+    const app = document.getElementById('app');
+    const statusText = document.getElementById('status-text');
+    const sidebar = document.getElementById('sidebar');
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const saveModal = document.getElementById('save-modal');
+    const viewTranscriptionModal = document.getElementById('view-transcription-modal');
+    
+    // Elementos do usuário
+    const userNameElements = document.querySelectorAll('#user-name');
+    const userEmailElements = document.querySelectorAll('#user-email');
+    const userAvatar = document.getElementById('user-avatar');
+    const userPhoto = document.getElementById('user-photo');
+    const userInitials = document.getElementById('user-initials');
+    const profileEmail = document.getElementById('profile-email');
+    
+    // Elementos de estatísticas
+    const totalTranscriptionsSpan = document.getElementById('total-transcriptions');
+    const latestActivitySpan = document.getElementById('latest-activity');
+    const savedDataSpan = document.getElementById('saved-data');
+    
+    // Elementos de listagem
+    const recentTranscriptionsList = document.getElementById('recent-transcriptions');
+    const allTranscriptionsList = document.getElementById('all-transcriptions-list');
+    
+    // Elementos de transcrição
+    const transcriptionText = document.getElementById('transcription-text');
+    const processedOutput = document.getElementById('processed-output');
+    const recordingTime = document.getElementById('recording-time');
+    const processTextBtn = document.getElementById('process-text');
+    const saveTranscriptionBtn = document.getElementById('saveTranscriptionBtn');
+    
+    // Elementos do modal
+    const transcriptionTitleInput = document.getElementById('transcription-title');
+    const confirmSaveBtn = document.getElementById('confirm-save-btn');
+    const modalTranscriptionTitle = document.getElementById('modal-transcription-title');
+    const modalTranscriptionDate = document.getElementById('modal-transcription-date');
+    const modalTranscriptionText = document.getElementById('modal-transcription-text');
+    const modalProcessedText = document.getElementById('modal-processed-text');
+    const modalProcessingType = document.getElementById('modal-processing-type');
+    const editTranscriptionBtn = document.getElementById('edit-transcription-btn');
+    const deleteTranscriptionBtn = document.getElementById('delete-transcription-btn');
+    
+    // Variáveis globais
+    let currentTranscriptionId = null;
+    let currentPage = 'dashboard';
+    let allTranscriptions = [];
+    
+    // Inicialização
+    function showApp() {
+      console.log('Executando showApp()...');
+      
+      // Verificar se os elementos existem
+      if (!splash || !app) {
+        console.error('Elementos splash ou app não encontrados!');
+        return;
+      }
+      
+      // Adicionar logs para verificar o estado antes da alteração
+      console.log('Estado inicial - splash:', splash.className);
+      console.log('Estado inicial - app:', app.className);
+      
+      // Esconder a tela de carregamento e mostrar a aplicação
+      splash.classList.add('hidden');
+      app.classList.remove('hidden');
+      
+      console.log('Estado após alteração - splash:', splash.className);
+      console.log('Estado após alteração - app:', app.className);
+    }
+    
+    function initApp() {
+      console.log('Iniciando verificação de autenticação...');
+      firebase.auth().onAuthStateChanged((user) => {
+        console.log("Estado de autenticação:", user ? "Logado como " + (user.email || user.uid) : "Não logado");
+        if (user) {
+          // Usuário está logado
+          console.log('Usuário autenticado, configurando interface...');
+          
+          // Atualizar informações do usuário
+          updateUserInfo(user);
+          
+          try {
+            console.log('Carregando histórico do usuário...');
+            loadUserData(user.uid);
+          } catch (error) {
+            console.error('Erro ao carregar dados do usuário:', error);
+          }
+          
+          console.log('Mostrando a aplicação...');
+          showApp();
+        } else {
+          console.log('Usuário não autenticado, redirecionando para login...');
+          window.location.href = './login.html';
+        }
+      });
+    }
+    
+    // Atualizar informações do usuário na interface
+    function updateUserInfo(user) {
+      // Atualizar nome
+      userNameElements.forEach(element => {
+        element.textContent = user.displayName || user.email || "Usuário";
+      });
+      
+      // Atualizar email
+      userEmailElements.forEach(element => {
+        element.textContent = user.email || "";
+      });
+      
+      if (profileEmail) {
+        profileEmail.textContent = user.email || "";
+      }
+      
+      // Atualizar avatar
+      if (user.photoURL) {
+        userPhoto.src = user.photoURL;
+        userPhoto.style.display = 'block';
+        userInitials.style.display = 'none';
+      } else {
+        // Mostrar iniciais
+        const name = user.displayName || user.email || "Usuário";
+        const initial = name.charAt(0).toUpperCase();
+        userInitials.textContent = initial;
+        userInitials.style.display = 'flex';
+        userPhoto.style.display = 'none';
+      }
+    }
+    
+    // Carregar dados do usuário
+    function loadUserData(userId) {
+      console.log('Carregando dados para userId:', userId);
+      
+      // Mostrar spinners
+      document.getElementById('recent-transcriptions-spinner').style.display = 'block';
+      document.getElementById('all-transcriptions-spinner').style.display = 'block';
+      
+      try {
+        // Buscar transcrições do usuário
+        if (window.firebaseHelper && typeof window.firebaseHelper.getUserTranscriptions === 'function') {
+          window.firebaseHelper.getUserTranscriptions()
+            .then(transcriptions => {
+              // Armazenar todas as transcrições
+              allTranscriptions = transcriptions;
+              
+              // Atualizar estatísticas
+              updateStats(transcriptions);
+              
+              // Carregar transcrições recentes
+              loadRecentTranscriptions(transcriptions);
+              
+              // Esconder spinners
+              document.getElementById('recent-transcriptions-spinner').style.display = 'none';
+              document.getElementById('all-transcriptions-spinner').style.display = 'none';
+            })
+            .catch(error => {
+              console.error('Erro ao carregar transcrições:', error);
+              document.getElementById('recent-transcriptions-spinner').style.display = 'none';
+              document.getElementById('all-transcriptions-spinner').style.display = 'none';
+            });
+        } else {
+          console.warn('firebaseHelper.getUserTranscriptions não está disponível');
+          document.getElementById('recent-transcriptions-spinner').style.display = 'none';
+          document.getElementById('all-transcriptions-spinner').style.display = 'none';
+        }
+        
+        // Carregar chave API do usuário
+        loadApiKey();
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+        document.getElementById('recent-transcriptions-spinner').style.display = 'none';
+        document.getElementById('all-transcriptions-spinner').style.display = 'none';
+      }
+    }
+    
+    // Função para atualizar estatísticas
+    function updateStats(transcriptions) {
+      // Total de transcrições
+      totalTranscriptionsSpan.textContent = transcriptions.length;
+      
+      // Última atividade
+      if (transcriptions.length > 0) {
+        const latestDate = new Date(Math.max(...transcriptions.map(t => t.createdAt)));
+        const now = new Date();
+        const diffDays = Math.floor((now - latestDate) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) {
+          latestActivitySpan.textContent = 'Hoje';
+        } else if (diffDays === 1) {
+          latestActivitySpan.textContent = 'Ontem';
+        } else {
+          latestActivitySpan.textContent = `${diffDays} dias atrás`;
+        }
+      } else {
+        latestActivitySpan.textContent = '-';
+      }
+      
+      // Tamanho dos dados salvos
+      let totalSize = 0;
+      transcriptions.forEach(t => {
+        // Estimativa aproximada do tamanho dos textos em bytes
+        totalSize += (t.text?.length || 0) + (t.processedText?.length || 0) + 
+                    (t.title?.length || 0) + 100; // 100 bytes extras para metadados
+      });
+      
+      if (totalSize < 1024) {
+        savedDataSpan.textContent = `${totalSize} B`;
+      } else if (totalSize < 1024 * 1024) {
+        savedDataSpan.textContent = `${Math.round(totalSize / 1024)} KB`;
+      } else {
+        savedDataSpan.textContent = `${Math.round(totalSize / (1024 * 1024) * 10) / 10} MB`;
+      }
+    }
+    
+    // Carregar transcrições recentes
+    function loadRecentTranscriptions(transcriptions) {
+      const recentList = document.getElementById('recent-transcriptions');
+      recentList.innerHTML = '';
+      
+      if (transcriptions.length === 0) {
+        // Mostrar estado vazio
+        document.getElementById('empty-state-recent').style.display = 'flex';
+        return;
+      }
+      
+      // Esconder estado vazio
+      document.getElementById('empty-state-recent').style.display = 'none';
+      
+      // Mostrar as 5 transcrições mais recentes
+      const recentTranscriptions = [...transcriptions]
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, 5);
+      
+      recentTranscriptions.forEach(item => {
+        const li = createTranscriptionListItem(item);
+        recentList.appendChild(li);
+      });
+    }
+    
+    // Criar item de lista de transcrição
+    function createTranscriptionListItem(item) {
+      const li = document.createElement('li');
+      li.className = 'history-item';
+      
+      const html = `
+        <div class="history-item-header">
+          <div class="history-item-title">${item.title}</div>
+          <div class="history-item-date">${new Date(item.createdAt).toLocaleString()}</div>
+        </div>
+        <div class="history-item-preview">${item.text.substring(0, 100)}${item.text.length > 100 ? '...' : ''}</div>
+        <div class="history-item-actions">
+          <button class="btn btn-secondary btn-sm view-btn" data-id="${item.id}">
+            <i class="material-icons-round">visibility</i>
+            <span>Ver</span>
+          </button>
+          <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">
+            <i class="material-icons-round">edit</i>
+            <span>Editar</span>
+          </button>
+          <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">
+            <i class="material-icons-round">delete</i>
+            <span>Excluir</span>
+          </button>
+        </div>
+      `;
+      
+      li.innerHTML = html;
+      
+      // Adicionar eventos aos botões
+      li.querySelector('.view-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewTranscription(item.id);
+      });
+      
+      li.querySelector('.edit-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        editTranscription(item.id);
+      });
+      
+      li.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Tem certeza que deseja excluir esta transcrição?')) {
+          deleteTranscription(item.id);
+        }
+      });
+      
+      // O item inteiro também abre o modal de visualização
+      li.addEventListener('click', () => {
+        viewTranscription(item.id);
+      });
+      
+      return li;
+    }
+    
+    // Carregar todas as transcrições
+    function loadAllTranscriptions(searchTerm = '') {
+      const list = document.getElementById('all-transcriptions-list');
+      list.innerHTML = '';
+      
+      let filteredTranscriptions = [...allTranscriptions];
+      
+      // Filtrar por termo de busca se fornecido
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        filteredTranscriptions = filteredTranscriptions.filter(t => 
+          t.title.toLowerCase().includes(term) || 
+          t.text.toLowerCase().includes(term) ||
+          t.processedText.toLowerCase().includes(term)
+        );
+      }
+      
+      // Ordenar por data (mais recentes primeiro)
+      filteredTranscriptions.sort((a, b) => b.createdAt - a.createdAt);
+      
+      if (filteredTranscriptions.length === 0) {
+        // Mostrar estado vazio
+        document.getElementById('empty-state-all').style.display = 'flex';
+        return;
+      }
+      
+      // Esconder estado vazio
+      document.getElementById('empty-state-all').style.display = 'none';
+      
+      // Adicionar cada transcrição à lista
+      filteredTranscriptions.forEach(item => {
+        const li = createTranscriptionListItem(item);
+        list.appendChild(li);
+      });
+    }
+    
+    // Função para visualizar uma transcrição
+    function viewTranscription(id) {
+      const transcription = allTranscriptions.find(t => t.id === id);
+      if (!transcription) {
+        alert('Transcrição não encontrada');
+        return;
+      }
+      
+      // Preencher o modal com os dados
+      modalTranscriptionTitle.textContent = transcription.title;
+      modalTranscriptionDate.textContent = new Date(transcription.createdAt).toLocaleString();
+      modalTranscriptionText.textContent = transcription.text;
+      modalProcessedText.textContent = transcription.processedText;
+      
+      // Formatar o tipo de processamento
+      let processingType;
+      switch (transcription.processingType) {
+        case 'summary':
+          processingType = 'Resumo';
+          break;
+        case 'list':
+          processingType = 'Lista de Tópicos';
+          break;
+        case 'mindmap':
+          processingType = 'Mapa Mental';
+          break;
+        default:
+          processingType = transcription.processingType;
+      }
+      modalProcessingType.textContent = processingType;
+      
+      // Armazenar o ID atual
+      currentTranscriptionId = id;
+      
+      // Mostrar o modal
+      viewTranscriptionModal.style.display = 'flex';
+    }
+    
+    // Função para editar uma transcrição
+    function editTranscription(id) {
+      const transcription = allTranscriptions.find(t => t.id === id);
+      if (!transcription) {
+        alert('Transcrição não encontrada');
+        return;
+      }
+      
+      // Armazenar o ID atual
+      currentTranscriptionId = id;
+      
+      // Preencher os campos de edição
+      transcriptionText.textContent = transcription.text;
+      processedOutput.textContent = transcription.processedText;
+      
+      // Selecionar o tipo de processamento
+      document.querySelector(`input[name="processingOption"][value="${transcription.processingType}"]`).checked = true;
+      
+      // Ativar os botões
+      processTextBtn.disabled = false;
+      saveTranscriptionBtn.disabled = false;
+      
+      // Navegar para a página de gravação
+      navigateTo('record');
+      
+      // Esconder o modal se estiver aberto
+      viewTranscriptionModal.style.display = 'none';
+    }
+    
+    // Função para excluir uma transcrição
+    function deleteTranscription(id) {
+      if (window.firebaseHelper && typeof window.firebaseHelper.deleteTranscription === 'function') {
+        window.firebaseHelper.deleteTranscription(id)
+          .then(() => {
+            // Remover da lista
+            allTranscriptions = allTranscriptions.filter(t => t.id !== id);
+            
+            // Atualizar visualizações
+            updateStats(allTranscriptions);
+            loadRecentTranscriptions(allTranscriptions);
+            
+            // Se a página atual for histórico, atualizar a lista
+            if (currentPage === 'history') {
+              loadAllTranscriptions(document.getElementById('search-transcriptions').value);
+            }
+            
+            // Fechar o modal se estiver aberto
+            if (currentTranscriptionId === id) {
+              viewTranscriptionModal.style.display = 'none';
+            }
+            
+            alert('Transcrição excluída com sucesso!');
+          })
+          .catch(error => {
+            console.error('Erro ao excluir transcrição:', error);
+            alert('Erro ao excluir transcrição. Por favor, tente novamente.');
+          });
+      } else {
+        console.error('Função deleteTranscription não está disponível');
+        alert('Erro ao excluir transcrição. Sistema indisponível.');
+      }
+    }
+    
+    // Carregar chave API
+    function loadApiKey() {
+      // Primeiro tentar localStorage
+      const savedApiKey = localStorage.getItem('openai_api_key');
+      
+      // Preencher campo se existir
+      const apiKeyInput = document.getElementById('api-key');
+      if (apiKeyInput && savedApiKey) {
+        apiKeyInput.value = savedApiKey;
+      }
+      
+      // Tentar carregar do Firebase
+      if (window.firebaseHelper && typeof window.firebaseHelper.loadUserApiKey === 'function') {
+        window.firebaseHelper.loadUserApiKey()
+          .then(apiKey => {
+            if (apiKey && apiKeyInput) {
+              apiKeyInput.value = apiKey;
+            }
+          })
+          .catch(error => {
+            console.error('Erro ao carregar chave API:', error);
+          });
+      }
+    }
+    
+    // Navegação entre páginas
+    function navigateTo(page) {
+      // Esconder todas as páginas
+      document.querySelectorAll('.page-content').forEach(p => {
+        p.style.display = 'none';
+      });
+      
+      // Remover classe ativa de todos os links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      // Mostrar a página selecionada
+      document.getElementById(`${page}-page`).style.display = 'block';
+      
+      // Adicionar classe ativa ao link
+      document.querySelector(`.nav-link[data-page="${page}"]`).classList.add('active');
+      
+      // Atualizar título da página
+      document.getElementById('page-title').textContent = page.charAt(0).toUpperCase() + page.slice(1);
+      
+      // Armazenar a página atual
+      currentPage = page;
+      
+      // Carregar dados específicos da página
+      if (page === 'history') {
+        loadAllTranscriptions();
+      }
+      
+      // Fechar o menu móvel após a navegação
+      if (window.innerWidth < 992) {
+        sidebar.classList.remove('show');
+      }
+      
+      // Atualizar URL com hash
+      window.location.hash = page;
+    }
+    
+    // Manipulador para salvar chave API
+    function handleSaveApiKey() {
+      const apiKey = document.getElementById('api-key').value.trim();
+      
+      if (!apiKey) {
+        alert('Por favor, insira uma chave API válida.');
+        return;
+      }
+      
+      if (!apiKey.startsWith("sk-")) {
+        alert('Chave API inválida. Deve começar com "sk-"');
+        return;
+      }
+      
+      // Salvar localmente
+      localStorage.setItem('openai_api_key', apiKey);
+      
+      // Salvar no Firebase
+      if (window.firebaseHelper && typeof window.firebaseHelper.saveUserApiKey === 'function') {
+        window.firebaseHelper.saveUserApiKey(apiKey)
+          .then(() => {
+            alert('Chave API salva com sucesso!');
+          })
+          .catch((error) => {
+            console.error('Erro ao salvar chave API:', error);
+            alert('Erro ao salvar chave API no servidor. Foi salva apenas localmente.');
+          });
+      } else {
+        alert('Chave API salva apenas localmente.');
+      }
+    }
+    
+    // Configuração de eventos
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log('DOM carregado, inicializando aplicação...');
+      
+      // Inicializar navegação
+      initNavigation();
+      
+      // Configurar interações dos modais
+      setupModals();
+      
+      // Timeout para iniciar app após carregamento dos módulos
+      setTimeout(() => {
+        console.log('Iniciando app após timeout');
+        initApp();
+      }, 1500);
+      
+      // Botão de logout
+      document.getElementById("logout-button").addEventListener("click", () => {
+        console.log('Botão de logout clicado');
+        firebase.auth().signOut().then(() => {
+          window.location.href = './login.html';
+        });
+      });
+      
+      // Botão de toggle menu mobile
+      mobileMenuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('show');
+      });
+      
+      // Botões de gravação
+      if (document.getElementById("start-recording")) {
+        document.getElementById("start-recording").addEventListener("click", () => {
+          if (typeof startRecording === 'function') {
+            startRecording();
+          } else {
+            console.error('Função startRecording não encontrada');
+          }
+        });
+      }
+      
+      if (document.getElementById("stop-recording")) {
+        document.getElementById("stop-recording").addEventListener("click", () => {
+          if (typeof stopRecording === 'function') {
+            stopRecording();
+          } else {
+            console.error('Função stopRecording não encontrada');
+          }
+        });
+      }
+      
+      // Botão de processamento
+      if (processTextBtn) {
+        processTextBtn.addEventListener("click", () => {
+          const text = transcriptionText.textContent.trim();
+          if (text) {
+            // Obter o tipo de processamento selecionado
+            const selectedOption = document.querySelector('input[name="processingOption"]:checked').value;
+            window.currentProcessingType = selectedOption;
+            
+            // Atualizar texto transcrito
+            window.transcribedText = text;
+            
+            if (typeof processText === 'function') {
+              processText();
+            } else {
+              console.error('Função processText não encontrada');
+            }
+          }
+        });
+      }
+      
+      // Habilitar botão de processamento quando houver texto
+      if (transcriptionText) {
+        transcriptionText.addEventListener('input', () => {
+          processTextBtn.disabled = transcriptionText.textContent.trim() === '';
+        });
+      }
+      
+      // Botão de salvar transcrição
+      if (saveTranscriptionBtn) {
+        saveTranscriptionBtn.addEventListener('click', showSaveModal);
+      }
+      
+      // Botão de salvar chave API
+      if (document.getElementById('save-api-key')) {
+        document.getElementById('save-api-key').addEventListener('click', handleSaveApiKey);
+      }
+      
+      // Busca de transcrições
+      if (document.getElementById('search-transcriptions')) {
+        document.getElementById('search-transcriptions').addEventListener('input', (e) => {
+          loadAllTranscriptions(e.target.value.trim());
+        });
+      }
+      
+      // Opções de processamento
+      document.querySelectorAll('input[name="processingOption"]').forEach(option => {
+        option.addEventListener('change', function() {
+          // Remover seleção de todos os cards
+          document.querySelectorAll('.option-card').forEach(card => {
+            card.classList.remove('selected');
+          });
+          
+          // Adicionar seleção ao card atual
+          this.closest('.option-card').classList.add('selected');
+          
+          // Atualizar variável global
+          window.currentProcessingType = this.value;
+        });
+      });
+      
+      // Botões de mudança de senha e exclusão de conta
+      if (document.getElementById('change-password-btn')) {
+        document.getElementById('change-password-btn').addEventListener('click', () => {
+          const user = firebase.auth().currentUser;
+          if (!user) {
+            alert('Você precisa estar logado para alterar a senha.');
+            return;
+          }
+          
+          const email = user.email;
+          firebase.auth().sendPasswordResetEmail(email)
+            .then(() => {
+              alert('Um email de redefinição de senha foi enviado para ' + email);
+            })
+            .catch((error) => {
+              console.error('Erro ao enviar email de redefinição:', error);
+              alert('Erro ao enviar email de redefinição: ' + error.message);
+            });
+        });
+      }
+      
+      if (document.getElementById('delete-account-btn')) {
+        document.getElementById('delete-account-btn').addEventListener('click', () => {
+          if (confirm('ATENÇÃO: Esta ação é irreversível! Todos os seus dados serão excluídos permanentemente. Deseja continuar?')) {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+              alert('Você precisa estar logado para excluir sua conta.');
+              return;
+            }
+            
+            // Excluir dados do usuário primeiro
+            firebase.database().ref('users/' + user.uid).remove()
+              .then(() => {
+                // Em seguida, excluir a conta
+                return user.delete();
+              })
+              .then(() => {
+                alert('Sua conta foi excluída com sucesso.');
+                window.location.href = './login.html';
+              })
+              .catch((error) => {
+                console.error('Erro ao excluir conta:', error);
+                alert('Erro ao excluir conta: ' + error.message);
+              });
+          }
+        });
+      }
+    });
+    
+    // Inicializar navegação
+    function initNavigation() {
+      // Adicionar eventos de clique nos links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const page = link.getAttribute('data-page');
+          navigateTo(page);
+        });
+      });
+      
+      // Verificar hash na URL ao carregar
+      window.addEventListener('load', () => {
+        const hash = window.location.hash.substring(1);
+        if (hash && document.getElementById(`${hash}-page`)) {
+          navigateTo(hash);
+        } else {
+          navigateTo('dashboard');
+        }
+      });
+    }
+    
+    // Configurar modais
+    function setupModals() {
+      // Modal de salvar transcrição
+      document.querySelectorAll('.close-modal, .close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          saveModal.style.display = 'none';
+          viewTranscriptionModal.style.display = 'none';
+        });
+      });
+      
+      // Fechar modal ao clicar fora
+      window.addEventListener('click', (event) => {
+        if (event.target === saveModal) {
+          saveModal.style.display = 'none';
+        }
+        if (event.target === viewTranscriptionModal) {
+          viewTranscriptionModal.style.display = 'none';
+        }
+      });
+      
+      // Configurar botão de confirmação no modal de salvar
+      if (confirmSaveBtn) {
+        confirmSaveBtn.addEventListener('click', saveTranscriptionToFirebase);
+      }
+      
+      // Configurar botões no modal de visualização
+      if (editTranscriptionBtn) {
+        editTranscriptionBtn.addEventListener('click', () => {
+          if (currentTranscriptionId) {
+            editTranscription(currentTranscriptionId);
+          }
+        });
+      }
+      
+      if (deleteTranscriptionBtn) {
+        deleteTranscriptionBtn.addEventListener('click', () => {
+          if (currentTranscriptionId) {
+            if (confirm('Tem certeza que deseja excluir esta transcrição?')) {
+              deleteTranscription(currentTranscriptionId);
+            }
+          }
+        });
+      }
+    }
+    
+    // Mostrar modal de salvar
+    function showSaveModal() {
+      if (!transcriptionText.textContent.trim()) {
+        alert('Não há texto para salvar. Faça uma gravação primeiro.');
+        return;
+      }
+      
+      // Limpar o input do título
+      transcriptionTitleInput.value = '';
+      
+      // Mostrar o modal
+      saveModal.style.display = 'flex';
+    }
+    
+    // Salvar transcrição no Firebase
+    function saveTranscriptionToFirebase() {
+      const title = transcriptionTitleInput.value.trim() || 
+                  'Transcrição ' + new Date().toLocaleString();
+      
+      const transcriptionData = {
+        text: transcriptionText.textContent.trim(),
+        processedText: processedOutput.textContent.trim(),
+        processingType: window.currentProcessingType || 'summary',
+        title: title
+      };
+      
+      // Se estamos editando uma transcrição existente
+      if (currentTranscriptionId) {
+        if (window.firebaseHelper && typeof window.firebaseHelper.updateTranscription === 'function') {
+          window.firebaseHelper.updateTranscription(currentTranscriptionId, transcriptionData)
+            .then(() => {
+              saveModal.style.display = 'none';
+              alert('Transcrição atualizada com sucesso.');
+              
+              // Atualizar a transcrição na lista
+              const index = allTranscriptions.findIndex(t => t.id === currentTranscriptionId);
+              if (index !== -1) {
+                allTranscriptions[index] = {
+                  ...allTranscriptions[index],
+                  ...transcriptionData,
+                  updatedAt: Date.now()
+                };
+                
+                // Atualizar visualizações
+                updateStats(allTranscriptions);
+                loadRecentTranscriptions(allTranscriptions);
+                
+                // Se a página atual for histórico, atualizar a lista
+                if (currentPage === 'history') {
+                  loadAllTranscriptions(document.getElementById('search-transcriptions').value);
+                }
+              }
+            })
+            .catch((error) => {
+              console.error('Erro ao atualizar transcrição:', error);
+              alert('Erro ao atualizar: ' + error.message);
+            });
+        } else {
+          console.error('Função updateTranscription não está disponível');
+          alert('Erro ao atualizar transcrição. Sistema indisponível.');
+        }
+      } else {
+        // Estamos salvando uma nova transcrição
+        if (window.firebaseHelper && typeof window.firebaseHelper.saveTranscription === 'function') {
+          window.firebaseHelper.saveTranscription(transcriptionData)
+            .then((savedTranscription) => {
+              saveModal.style.display = 'none';
+              alert('Transcrição salva com sucesso.');
+              
+              // Armazenar o ID da transcrição
+              currentTranscriptionId = savedTranscription.id;
+              
+              // Adicionar à lista de transcrições
+              allTranscriptions.push(savedTranscription);
+              
+              // Atualizar visualizações
+              updateStats(allTranscriptions);
+              loadRecentTranscriptions(allTranscriptions);
+              
+              // Se a página atual for histórico, atualizar a lista
+              if (currentPage === 'history') {
+                loadAllTranscriptions(document.getElementById('search-transcriptions').value);
+              }
+            })
+            .catch((error) => {
+              console.error('Erro ao salvar transcrição:', error);
+              alert('Erro ao salvar: ' + error.message);
+            });
+        } else {
+          console.error('Função saveTranscription não está disponível');
+          alert('Erro ao salvar transcrição. Sistema indisponível.');
+        }
+      }
+    }
+  </script>
+  
+  <!-- Código de emergência para forçar exibição da aplicação se necessário -->
+  <script>
+    // Código de emergência para debugging
+    setTimeout(() => {
+      console.log("Verificando se a aplicação está travada...");
+      const splash = document.getElementById('splash');
+      const app = document.getElementById('app');
+      
+      if (splash && !splash.classList.contains('hidden') && firebase.auth().currentUser) {
+        console.log("Detectado problema: splash ainda visível com usuário autenticado");
+        console.log("Tentando forçar a exibição da aplicação...");
+        
+        splash.style.display = 'none';
+        if (app) {
+          app.style.display = 'flex';
+          console.log("Aplicação forçada a ser exibida");
+        }
+      }
+    }, 5000); // Verificar após 5 segundos
+  </script>
+</body>
+</html><!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -1409,617 +2280,6 @@
           <button id="edit-transcription-btn" class="btn btn-secondary">
             <i class="material-icons-round">edit</i>
             <span>Editar</span>
-          </button>
-          <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">
-            <i class="material-icons-round">delete</i>
-            <span>Excluir</span>
-          </button>
-        </div>
-      `;
-      
-      li.innerHTML = html;
-      
-      // Adicionar eventos aos botões
-      li.querySelector('.view-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        viewTranscription(item.id);
-      });
-      
-      li.querySelector('.edit-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        editTranscription(item.id);
-      });
-      
-      li.querySelector('.delete-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (confirm('Tem certeza que deseja excluir esta transcrição?')) {
-          deleteTranscription(item.id);
-        }
-      });
-      
-      // O item inteiro também abre o modal de visualização
-      li.addEventListener('click', () => {
-        viewTranscription(item.id);
-      });
-      
-      return li;
-    }
-    
-    // Carregar todas as transcrições
-    function loadAllTranscriptions(searchTerm = '') {
-      const list = document.getElementById('all-transcriptions-list');
-      list.innerHTML = '';
-      
-      let filteredTranscriptions = [...allTranscriptions];
-      
-      // Filtrar por termo de busca se fornecido
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        filteredTranscriptions = filteredTranscriptions.filter(t => 
-          t.title.toLowerCase().includes(term) || 
-          t.text.toLowerCase().includes(term) ||
-          t.processedText.toLowerCase().includes(term)
-        );
-      }
-      
-      // Ordenar por data (mais recentes primeiro)
-      filteredTranscriptions.sort((a, b) => b.createdAt - a.createdAt);
-      
-      if (filteredTranscriptions.length === 0) {
-        // Mostrar estado vazio
-        document.getElementById('empty-state-all').style.display = 'flex';
-        return;
-      }
-      
-      // Esconder estado vazio
-      document.getElementById('empty-state-all').style.display = 'none';
-      
-      // Adicionar cada transcrição à lista
-      filteredTranscriptions.forEach(item => {
-        const li = createTranscriptionListItem(item);
-        list.appendChild(li);
-      });
-    }
-    
-    // Função para visualizar uma transcrição
-    function viewTranscription(id) {
-      const transcription = allTranscriptions.find(t => t.id === id);
-      if (!transcription) {
-        alert('Transcrição não encontrada');
-        return;
-      }
-      
-      // Preencher o modal com os dados
-      modalTranscriptionTitle.textContent = transcription.title;
-      modalTranscriptionDate.textContent = new Date(transcription.createdAt).toLocaleString();
-      modalTranscriptionText.textContent = transcription.text;
-      modalProcessedText.textContent = transcription.processedText;
-      
-      // Formatar o tipo de processamento
-      let processingType;
-      switch (transcription.processingType) {
-        case 'summary':
-          processingType = 'Resumo';
-          break;
-        case 'list':
-          processingType = 'Lista de Tópicos';
-          break;
-        case 'mindmap':
-          processingType = 'Mapa Mental';
-          break;
-        default:
-          processingType = transcription.processingType;
-      }
-      modalProcessingType.textContent = processingType;
-      
-      // Armazenar o ID atual
-      currentTranscriptionId = id;
-      
-      // Mostrar o modal
-      viewTranscriptionModal.style.display = 'flex';
-    }
-    
-    // Função para editar uma transcrição
-    function editTranscription(id) {
-      const transcription = allTranscriptions.find(t => t.id === id);
-      if (!transcription) {
-        alert('Transcrição não encontrada');
-        return;
-      }
-      
-      // Armazenar o ID atual
-      currentTranscriptionId = id;
-      
-      // Preencher os campos de edição
-      transcriptionText.textContent = transcription.text;
-      processedOutput.textContent = transcription.processedText;
-      
-      // Selecionar o tipo de processamento
-      document.querySelector(`input[name="processingOption"][value="${transcription.processingType}"]`).checked = true;
-      
-      // Ativar os botões
-      processTextBtn.disabled = false;
-      saveTranscriptionBtn.disabled = false;
-      
-      // Navegar para a página de gravação
-      navigateTo('record');
-      
-      // Esconder o modal se estiver aberto
-      viewTranscriptionModal.style.display = 'none';
-    }
-    
-    // Função para excluir uma transcrição
-    function deleteTranscription(id) {
-      if (window.firebaseHelper && typeof window.firebaseHelper.deleteTranscription === 'function') {
-        window.firebaseHelper.deleteTranscription(id)
-          .then(() => {
-            // Remover da lista
-            allTranscriptions = allTranscriptions.filter(t => t.id !== id);
-            
-            // Atualizar visualizações
-            updateStats(allTranscriptions);
-            loadRecentTranscriptions(allTranscriptions);
-            
-            // Se a página atual for histórico, atualizar a lista
-            if (currentPage === 'history') {
-              loadAllTranscriptions(document.getElementById('search-transcriptions').value);
-            }
-            
-            // Fechar o modal se estiver aberto
-            if (currentTranscriptionId === id) {
-              viewTranscriptionModal.style.display = 'none';
-            }
-            
-            alert('Transcrição excluída com sucesso!');
-          })
-          .catch(error => {
-            console.error('Erro ao excluir transcrição:', error);
-            alert('Erro ao excluir transcrição. Por favor, tente novamente.');
-          });
-      } else {
-        console.error('Função deleteTranscription não está disponível');
-        alert('Erro ao excluir transcrição. Sistema indisponível.');
-      }
-    }
-    
-    // Carregar chave API
-    function loadApiKey() {
-      // Primeiro tentar localStorage
-      const savedApiKey = localStorage.getItem('openai_api_key');
-      
-      // Preencher campo se existir
-      const apiKeyInput = document.getElementById('api-key');
-      if (apiKeyInput && savedApiKey) {
-        apiKeyInput.value = savedApiKey;
-      }
-      
-      // Tentar carregar do Firebase
-      if (window.firebaseHelper && typeof window.firebaseHelper.loadUserApiKey === 'function') {
-        window.firebaseHelper.loadUserApiKey()
-          .then(apiKey => {
-            if (apiKey && apiKeyInput) {
-              apiKeyInput.value = apiKey;
-            }
-          })
-          .catch(error => {
-            console.error('Erro ao carregar chave API:', error);
-          });
-      }
-    }
-    
-    // Navegação entre páginas
-    function navigateTo(page) {
-      // Esconder todas as páginas
-      document.querySelectorAll('.page-content').forEach(p => {
-        p.style.display = 'none';
-      });
-      
-      // Remover classe ativa de todos os links
-      document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-      });
-      
-      // Mostrar a página selecionada
-      document.getElementById(`${page}-page`).style.display = 'block';
-      
-      // Adicionar classe ativa ao link
-      document.querySelector(`.nav-link[data-page="${page}"]`).classList.add('active');
-      
-      // Atualizar título da página
-      document.getElementById('page-title').textContent = page.charAt(0).toUpperCase() + page.slice(1);
-      
-      // Armazenar a página atual
-      currentPage = page;
-      
-      // Carregar dados específicos da página
-      if (page === 'history') {
-        loadAllTranscriptions();
-      }
-      
-      // Fechar o menu móvel após a navegação
-      if (window.innerWidth < 992) {
-        sidebar.classList.remove('show');
-      }
-      
-      // Atualizar URL com hash
-      window.location.hash = page;
-    }
-    
-    // Manipulador para salvar chave API
-    function handleSaveApiKey() {
-      const apiKey = document.getElementById('api-key').value.trim();
-      
-      if (!apiKey) {
-        alert('Por favor, insira uma chave API válida.');
-        return;
-      }
-      
-      if (!apiKey.startsWith("sk-")) {
-        alert('Chave API inválida. Deve começar com "sk-"');
-        return;
-      }
-      
-      // Salvar localmente
-      localStorage.setItem('openai_api_key', apiKey);
-      
-      // Salvar no Firebase
-      if (window.firebaseHelper && typeof window.firebaseHelper.saveUserApiKey === 'function') {
-        window.firebaseHelper.saveUserApiKey(apiKey)
-          .then(() => {
-            alert('Chave API salva com sucesso!');
-          })
-          .catch((error) => {
-            console.error('Erro ao salvar chave API:', error);
-            alert('Erro ao salvar chave API no servidor. Foi salva apenas localmente.');
-          });
-      } else {
-        alert('Chave API salva apenas localmente.');
-      }
-    }
-    
-    // Configuração de eventos
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log('DOM carregado, inicializando aplicação...');
-      
-      // Inicializar navegação
-      initNavigation();
-      
-      // Configurar interações dos modais
-      setupModals();
-      
-      // Timeout para iniciar app após carregamento dos módulos
-      setTimeout(() => {
-        console.log('Iniciando app após timeout');
-        initApp();
-      }, 1500);
-      
-      // Botão de logout
-      document.getElementById("logout-button").addEventListener("click", () => {
-        console.log('Botão de logout clicado');
-        firebase.auth().signOut().then(() => {
-          window.location.href = './login.html';
-        });
-      });
-      
-      // Botão de toggle menu mobile
-      mobileMenuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('show');
-      });
-      
-      // Botões de gravação
-      if (document.getElementById("start-recording")) {
-        document.getElementById("start-recording").addEventListener("click", () => {
-          if (typeof startRecording === 'function') {
-            startRecording();
-          } else {
-            console.error('Função startRecording não encontrada');
-          }
-        });
-      }
-      
-      if (document.getElementById("stop-recording")) {
-        document.getElementById("stop-recording").addEventListener("click", () => {
-          if (typeof stopRecording === 'function') {
-            stopRecording();
-          } else {
-            console.error('Função stopRecording não encontrada');
-          }
-        });
-      }
-      
-      // Botão de processamento
-      if (processTextBtn) {
-        processTextBtn.addEventListener("click", () => {
-          const text = transcriptionText.textContent.trim();
-          if (text) {
-            // Obter o tipo de processamento selecionado
-            const selectedOption = document.querySelector('input[name="processingOption"]:checked').value;
-            window.currentProcessingType = selectedOption;
-            
-            // Atualizar texto transcrito
-            window.transcribedText = text;
-            
-            if (typeof processText === 'function') {
-              processText();
-            } else {
-              console.error('Função processText não encontrada');
-            }
-          }
-        });
-      }
-      
-      // Habilitar botão de processamento quando houver texto
-      if (transcriptionText) {
-        transcriptionText.addEventListener('input', () => {
-          processTextBtn.disabled = transcriptionText.textContent.trim() === '';
-        });
-      }
-      
-      // Botão de salvar transcrição
-      if (saveTranscriptionBtn) {
-        saveTranscriptionBtn.addEventListener('click', showSaveModal);
-      }
-      
-      // Botão de salvar chave API
-      if (document.getElementById('save-api-key')) {
-        document.getElementById('save-api-key').addEventListener('click', handleSaveApiKey);
-      }
-      
-      // Busca de transcrições
-      if (document.getElementById('search-transcriptions')) {
-        document.getElementById('search-transcriptions').addEventListener('input', (e) => {
-          loadAllTranscriptions(e.target.value.trim());
-        });
-      }
-      
-      // Opções de processamento
-      document.querySelectorAll('input[name="processingOption"]').forEach(option => {
-        option.addEventListener('change', function() {
-          // Remover seleção de todos os cards
-          document.querySelectorAll('.option-card').forEach(card => {
-            card.classList.remove('selected');
-          });
-          
-          // Adicionar seleção ao card atual
-          this.closest('.option-card').classList.add('selected');
-          
-          // Atualizar variável global
-          window.currentProcessingType = this.value;
-        });
-      });
-      
-      // Botões de mudança de senha e exclusão de conta
-      if (document.getElementById('change-password-btn')) {
-        document.getElementById('change-password-btn').addEventListener('click', () => {
-          const user = firebase.auth().currentUser;
-          if (!user) {
-            alert('Você precisa estar logado para alterar a senha.');
-            return;
-          }
-          
-          const email = user.email;
-          firebase.auth().sendPasswordResetEmail(email)
-            .then(() => {
-              alert('Um email de redefinição de senha foi enviado para ' + email);
-            })
-            .catch((error) => {
-              console.error('Erro ao enviar email de redefinição:', error);
-              alert('Erro ao enviar email de redefinição: ' + error.message);
-            });
-        });
-      }
-      
-      if (document.getElementById('delete-account-btn')) {
-        document.getElementById('delete-account-btn').addEventListener('click', () => {
-          if (confirm('ATENÇÃO: Esta ação é irreversível! Todos os seus dados serão excluídos permanentemente. Deseja continuar?')) {
-            const user = firebase.auth().currentUser;
-            if (!user) {
-              alert('Você precisa estar logado para excluir sua conta.');
-              return;
-            }
-            
-            // Excluir dados do usuário primeiro
-            firebase.database().ref('users/' + user.uid).remove()
-              .then(() => {
-                // Em seguida, excluir a conta
-                return user.delete();
-              })
-              .then(() => {
-                alert('Sua conta foi excluída com sucesso.');
-                window.location.href = './login.html';
-              })
-              .catch((error) => {
-                console.error('Erro ao excluir conta:', error);
-                alert('Erro ao excluir conta: ' + error.message);
-              });
-          }
-        });
-      }
-    });
-    
-    // Inicializar navegação
-    function initNavigation() {
-      // Adicionar eventos de clique nos links
-      document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          const page = link.getAttribute('data-page');
-          navigateTo(page);
-        });
-      });
-      
-      // Verificar hash na URL ao carregar
-      window.addEventListener('load', () => {
-        const hash = window.location.hash.substring(1);
-        if (hash && document.getElementById(`${hash}-page`)) {
-          navigateTo(hash);
-        } else {
-          navigateTo('dashboard');
-        }
-      });
-    }
-    
-    // Configurar modais
-    function setupModals() {
-      // Modal de salvar transcrição
-      document.querySelectorAll('.close-modal, .close-modal-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          saveModal.style.display = 'none';
-          viewTranscriptionModal.style.display = 'none';
-        });
-      });
-      
-      // Fechar modal ao clicar fora
-      window.addEventListener('click', (event) => {
-        if (event.target === saveModal) {
-          saveModal.style.display = 'none';
-        }
-        if (event.target === viewTranscriptionModal) {
-          viewTranscriptionModal.style.display = 'none';
-        }
-      });
-      
-      // Configurar botão de confirmação no modal de salvar
-      if (confirmSaveBtn) {
-        confirmSaveBtn.addEventListener('click', saveTranscriptionToFirebase);
-      }
-      
-      // Configurar botões no modal de visualização
-      if (editTranscriptionBtn) {
-        editTranscriptionBtn.addEventListener('click', () => {
-          if (currentTranscriptionId) {
-            editTranscription(currentTranscriptionId);
-          }
-        });
-      }
-      
-      if (deleteTranscriptionBtn) {
-        deleteTranscriptionBtn.addEventListener('click', () => {
-          if (currentTranscriptionId) {
-            if (confirm('Tem certeza que deseja excluir esta transcrição?')) {
-              deleteTranscription(currentTranscriptionId);
-            }
-          }
-        });
-      }
-    }
-    
-    // Mostrar modal de salvar
-    function showSaveModal() {
-      if (!transcriptionText.textContent.trim()) {
-        alert('Não há texto para salvar. Faça uma gravação primeiro.');
-        return;
-      }
-      
-      // Limpar o input do título
-      transcriptionTitleInput.value = '';
-      
-      // Mostrar o modal
-      saveModal.style.display = 'flex';
-    }
-    
-    // Salvar transcrição no Firebase
-    function saveTranscriptionToFirebase() {
-      const title = transcriptionTitleInput.value.trim() || 
-                  'Transcrição ' + new Date().toLocaleString();
-      
-      const transcriptionData = {
-        text: transcriptionText.textContent.trim(),
-        processedText: processedOutput.textContent.trim(),
-        processingType: window.currentProcessingType || 'summary',
-        title: title
-      };
-      
-      // Se estamos editando uma transcrição existente
-      if (currentTranscriptionId) {
-        if (window.firebaseHelper && typeof window.firebaseHelper.updateTranscription === 'function') {
-          window.firebaseHelper.updateTranscription(currentTranscriptionId, transcriptionData)
-            .then(() => {
-              saveModal.style.display = 'none';
-              alert('Transcrição atualizada com sucesso.');
-              
-              // Atualizar a transcrição na lista
-              const index = allTranscriptions.findIndex(t => t.id === currentTranscriptionId);
-              if (index !== -1) {
-                allTranscriptions[index] = {
-                  ...allTranscriptions[index],
-                  ...transcriptionData,
-                  updatedAt: Date.now()
-                };
-                
-                // Atualizar visualizações
-                updateStats(allTranscriptions);
-                loadRecentTranscriptions(allTranscriptions);
-                
-                // Se a página atual for histórico, atualizar a lista
-                if (currentPage === 'history') {
-                  loadAllTranscriptions(document.getElementById('search-transcriptions').value);
-                }
-              }
-            })
-            .catch((error) => {
-              console.error('Erro ao atualizar transcrição:', error);
-              alert('Erro ao atualizar: ' + error.message);
-            });
-        } else {
-          console.error('Função updateTranscription não está disponível');
-          alert('Erro ao atualizar transcrição. Sistema indisponível.');
-        }
-      } else {
-        // Estamos salvando uma nova transcrição
-        if (window.firebaseHelper && typeof window.firebaseHelper.saveTranscription === 'function') {
-          window.firebaseHelper.saveTranscription(transcriptionData)
-            .then((savedTranscription) => {
-              saveModal.style.display = 'none';
-              alert('Transcrição salva com sucesso.');
-              
-              // Armazenar o ID da transcrição
-              currentTranscriptionId = savedTranscription.id;
-              
-              // Adicionar à lista de transcrições
-              allTranscriptions.push(savedTranscription);
-              
-              // Atualizar visualizações
-              updateStats(allTranscriptions);
-              loadRecentTranscriptions(allTranscriptions);
-              
-              // Se a página atual for histórico, atualizar a lista
-              if (currentPage === 'history') {
-                loadAllTranscriptions(document.getElementById('search-transcriptions').value);
-              }
-            })
-            .catch((error) => {
-              console.error('Erro ao salvar transcrição:', error);
-              alert('Erro ao salvar: ' + error.message);
-            });
-        } else {
-          console.error('Função saveTranscription não está disponível');
-          alert('Erro ao salvar transcrição. Sistema indisponível.');
-        }
-      }
-    }
-  </script>
-  <script>
-  // Código de emergência para debugging
-  setTimeout(() => {
-    console.log("Verificando se a aplicação está travada...");
-    const splash = document.getElementById('splash');
-    const app = document.getElementById('app');
-    
-    if (splash && !splash.classList.contains('hidden') && firebase.auth().currentUser) {
-      console.log("Detectado problema: splash ainda visível com usuário autenticado");
-      console.log("Tentando forçar a exibição da aplicação...");
-      
-      splash.classList.add('hidden');
-      if (app) {
-        app.classList.remove('hidden');
-        console.log("Aplicação forçada a ser exibida");
-      }
-    }
-  }, 5000); // Verificar após 5 segundos
-</script>
-</body>
-</html>Editar</span>
           </button>
           <button id="delete-transcription-btn" class="btn btn-danger">
             <i class="material-icons-round">delete</i>
