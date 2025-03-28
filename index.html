@@ -40,6 +40,7 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(() => {
       // Após o service worker estar pronto, verifica autenticação
+      console.log("Executando checkAuthState dentro do index.html");
       checkAuthState((user) => {
         console.log("Autenticação verificada após SW. Usuário:", user?.uid || "não logado");
 
@@ -58,6 +59,7 @@
     });
   } else {
     // Se SW não estiver disponível, verifica auth imediatamente
+    console.log("Executando checkAuthState dentro do index.html");
     checkAuthState((user) => {
       const urlParams = new URLSearchParams(window.location.search);
       const action = urlParams.get('action');
