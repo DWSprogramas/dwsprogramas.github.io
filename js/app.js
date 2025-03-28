@@ -43,7 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
 // Verificar autenticação primeiro, antes de inicializar outros módulos
   checkAuthState((user) => {
-  console.log('Usuário autenticado ou redirecionamento já foi tratado. Inicializando módulos...');
+  if (window._isRedirecting) {
+    console.log('Redirecionamento em andamento, abortando inicialização...');
+    return;
+  }
+
 
   // Inicializar módulos se estiver autenticado ou na página de login
   initUIComponents();
