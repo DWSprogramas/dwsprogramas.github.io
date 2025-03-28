@@ -3,48 +3,38 @@
 function checkAuthState(callback) {
   console.log("Verificando estado de autenticação...");
 
-  firebase.auth().onAuthStateChanged((user) => {
-    console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
+firebase.auth().onAuthStateChanged((user) => {
+  const currentPath = window.location.pathname;
+  const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login');
 
-    const currentPath = window.location.pathname;
-    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login') || currentPath.endsWith('/login.html');
-
-    // ⛔ Se já está redirecionando, cancela execução
-    if (window._isRedirecting) {
-      console.log("Redirecionamento já em andamento. Abortando.");
-      return;
-    }
-
-    // 🚫 Usuário não autenticado e fora da tela de login
-    if (!user && !isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Redirecionando para a página de login...");
-      setTimeout(() => {
-        window.location.href = './login.html';
-      }, 100);
-      return;
-    }
-
-    // ✅ Usuário autenticado e ainda está na tela de login
-if (user && isLoginPage) {
-  const isAlreadyOnIndex = currentPath.includes('index.html') || currentPath === '/' || currentPath === '/index';
-
-  if (!isAlreadyOnIndex) {
-    window._isRedirecting = true;
-    console.log("Usuário autenticado. Redirecionando para index...");
-    setTimeout(() => {
-      window.location.href = './index.html';
-    }, 100);
+  if (window._isRedirecting) {
+    console.log("Redirecionamento em andamento, cancelando execução.");
     return;
   }
+
+if (!user && !isLoginPage) {
+  window._isRedirecting = true;
+  console.log("Redirecionando para a página de login...");
+  if (callback) callback(null); // Garante que o index continue
+  window.location.replace('./login.html'); // Melhor do que setTimeout
+  return;
 }
 
 
-    // 🧠 ⚠️ Aqui estava faltando a chamada
-    if (callback && typeof callback === 'function') {
-      callback(user); // garante que a lógica continue após a verificação
-    }
-  });
+
+  if (user && isLoginPage) {
+    window._isRedirecting = true;
+    console.log("Usuário já autenticado, redirecionando para index...");
+    window.location.href = './index.html';
+    return;
+  }
+
+  // ⚠️ Aqui garante que mesmo sem redirecionamento, o callback roda!
+  if (callback && typeof callback === 'function') {
+    callback(user);
+  }
+});
+
 }
 
 
