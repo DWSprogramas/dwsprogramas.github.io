@@ -35,8 +35,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="./js/firebase-config.js"></script>
-  <script src="./js/user-auth.js"></script>
+  <script src="./js/security.js"></script>
   <script src="./js/storage-manager.js"></script>
+  <script src="./js/user-auth.js"></script>
   <script src="./js/transcription.js"></script>
   <script src="./js/audio-recorder.js"></script>
   <script src="./js/ui-controller.js"></script>
@@ -85,43 +86,98 @@
     const statusText = document.getElementById('status-text');
 
     function showApp() {
+      console.log('Mostrando aplicação...');
       splash.classList.add('hidden');
       app.classList.remove('hidden');
     }
 
     function initApp() {
+      console.log('Iniciando aplicação...');
+      
+      // Verificar o estado de autenticação
       firebase.auth().onAuthStateChanged((user) => {
+        console.log('Estado de autenticação alterado:', user ? 'Usuário logado' : 'Usuário não logado');
+        
         if (user) {
+          // Usuário está logado
+          console.log('Usuário autenticado:', user.uid);
+          
+          // Exibir nome do usuário
           document.getElementById('user-name').textContent = user.displayName || user.email;
+          
+          // Armazenar ID do usuário globalmente
           window.userId = user.uid;
+          
+          // Carregar histórico do usuário
           loadUserHistory(user.uid);
+          
+          // Mostrar a aplicação
           showApp();
         } else {
+          // Usuário não está logado, redirecionar para a página de login
+          console.log('Usuário não autenticado, redirecionando para login...');
           window.location.href = './login.html';
         }
       });
     }
 
+    function loadUserHistory(userId) {
+      // Esta função será implementada no módulo de transcrição
+      console.log('Carregando histórico do usuário:', userId);
+      if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
+        window.transcriptionUtils.loadTranscriptionsList();
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
-      const swReady = ('serviceWorker' in navigator)
+      console.log('DOM carregado, inicializando aplicação...');
+      
+      // Definir um tempo máximo de espera (fallback)
+      const timeoutFallback = new Promise(resolve => setTimeout(() => {
+        console.log('Tempo máximo de espera atingido');
+        resolve();
+      }, 3000));
+      
+      // Verificar se o Service Worker está pronto
+      const swReady = ('serviceWorker' in navigator) 
         ? navigator.serviceWorker.ready
         : Promise.resolve();
-
-      const timeoutFallback = new Promise(resolve => setTimeout(resolve, 1500));
-
+      
+      // Iniciar o app após o Service Worker estar pronto ou após o timeout
       Promise.race([swReady, timeoutFallback]).then(() => {
+        console.log('Service Worker pronto ou timeout atingido, iniciando aplicação');
         initApp();
       });
-
+      
+      // Configurar botões
       document.getElementById("logout-button").addEventListener("click", () => {
-        firebase.auth().signOut();
+        console.log('Botão de logout clicado');
+        firebase.auth().signOut().then(() => {
+          console.log('Logout realizado com sucesso');
+          window.location.href = './login.html';
+        }).catch(error => {
+          console.error('Erro ao fazer logout:', error);
+        });
       });
-
-      document.getElementById("start-recording").addEventListener("click", startRecording);
-      document.getElementById("stop-recording").addEventListener("click", stopRecording);
+      
+      document.getElementById("start-recording").addEventListener("click", () => {
+        console.log('Botão de iniciar gravação clicado');
+        if (window.initAudioRecorder && typeof startRecording === 'function') {
+          startRecording();
+        }
+      });
+      
+      document.getElementById("stop-recording").addEventListener("click", () => {
+        console.log('Botão de parar gravação clicado');
+        if (typeof stopRecording === 'function') {
+          stopRecording();
+        }
+      });
+      
       document.getElementById("process-text").addEventListener("click", () => {
+        console.log('Botão de processar texto clicado');
         const text = document.getElementById("transcription-text").value;
-        if (text.trim()) {
+        if (text.trim() && typeof processTranscription === 'function') {
           processTranscription(text);
         }
       });
