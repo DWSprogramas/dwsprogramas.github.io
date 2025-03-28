@@ -1,3 +1,8 @@
+/**
+ * Configuração do Firebase para o Mapzy Vox IA
+ * Gerenciamento seguro de autenticação e armazenamento de dados
+ */
+
 // Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA38xgnGCOaTwBh9QF2IpBJnZDLd_qP0JE",
@@ -9,26 +14,55 @@ const firebaseConfig = {
   appId: "1:216266845109:web:5741201811d4bcab6d07fc"
 };
 
-// Inicializa o Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+// Verificar se o Firebase já foi inicializado
+if (typeof firebase === 'undefined') {
+  console.error("Firebase SDK não encontrado. Verifique se os scripts foram carregados corretamente.");
 }
 
-// Exporta os serviços específicos para usar em outros arquivos
-const auth = firebase.auth();
-const db = firebase.database();
+// Objeto para armazenar as referências do Firebase
+let auth, db, firebaseInitialized = false;
+
+// Inicializar o Firebase com tratamento de erros
+try {
+  if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+      console.log("Firebase inicializado com sucesso");
+    } else {
+      console.log("Usando instância existente do Firebase");
+    }
+    
+    // Obter referências
+    auth = firebase.auth();
+    db = firebase.database();
+    firebaseInitialized = true;
+  }
+} catch (error) {
+  console.error("Erro ao inicializar Firebase:", error);
+  firebaseInitialized = false;
+}
 
 // Definir caminhos do banco de dados para evitar inconsistências
 const DB_ROOT_PATH = 'MapzyVox';
 const USERS_PATH = `${DB_ROOT_PATH}/users`;
 const TRANSCRIPTIONS_PATH = 'transcriptions';
+const API_KEYS_PATH = 'apiKeys';
 
-// Função para obter referência ao caminho do usuário
+/**
+ * Obtém referência ao caminho do usuário no Firebase
+ * @param {string} userId - ID do usuário (opcional, usa o atual se não for fornecido)
+ * @returns {Object|null} Referência do Firebase ou null se não houver usuário
+ */
 function getUserRef(userId) {
+  if (!firebaseInitialized) {
+    console.warn("Firebase não está inicializado ao tentar obter referência do usuário");
+    return null;
+  }
+  
   if (!userId) {
     const user = auth.currentUser;
     if (!user) {
-      console.error('Tentativa de acessar dados sem usuário autenticado');
+      console.warn('Tentativa de acessar dados sem usuário autenticado');
       return null;
     }
     userId = user.uid;
@@ -36,41 +70,31 @@ function getUserRef(userId) {
   return db.ref(`${USERS_PATH}/${userId}`);
 }
 
-// Função para obter referência às transcrições do usuário
+/**
+ * Obtém referência às transcrições do usuário
+ * @param {string} userId - ID do usuário (opcional, usa o atual se não for fornecido)
+ * @returns {Object|null} Referência do Firebase ou null se não houver usuário
+ */
 function getUserTranscriptionsRef(userId) {
   const userRef = getUserRef(userId);
   if (!userRef) return null;
   return userRef.child(TRANSCRIPTIONS_PATH);
 }
 
-// Função para criar dados iniciais do usuário
-function createUserData(userId) {
-  if (!userId) {
-    console.error('ID de usuário não fornecido para createUserData');
-    return Promise.reject(new Error('ID de usuário não fornecido'));
+/**
+ * Salva a chave API do usuário de forma segura
+ * @param {string} apiKey - Chave API a ser salva
+ * @returns {Promise} Promise resolvida com mensagem de sucesso ou rejeitada com erro
+ */
+function saveUserApiKey(apiKey) {
+  if (!firebaseInitialized) {
+    console.warn("Firebase não está inicializado ao tentar salvar chave API");
+    return Promise.reject(new Error("Firebase não está inicializado"));
   }
   
-  const userData = {
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
-    lastLogin: firebase.database.ServerValue.TIMESTAMP,
-    transcriptions: {}
-  };
-  
-  return getUserRef(userId).set(userData)
-    .then(() => {
-      console.log('Dados iniciais do usuário criados com sucesso');
-      return userData;
-    })
-    .catch((error) => {
-      console.error('Erro ao criar dados do usuário:', error);
-      throw error;
-    });
-}
-
-// Função para salvar a API key do usuário
-function saveUserApiKey(apiKey) {
   console.log('Função saveUserApiKey iniciada');
   const user = auth.currentUser;
+  
   if (!user) {
     console.error('Usuário não está logado');
     return Promise.reject(new Error('Usuário não está logado'));
@@ -78,38 +102,38 @@ function saveUserApiKey(apiKey) {
   
   console.log('Usuário autenticado:', user.uid);
   
-  // Primeiro, salvar no localStorage usando o storageUtils
-  if (window.storageUtils && typeof window.storageUtils.saveApiKeyLocally === 'function') {
-    window.storageUtils.saveApiKeyLocally(apiKey);
-  } else {
-    console.warn('storageUtils não disponível para salvar localmente');
-  }
-  
-  // Criptografar a chave usando o módulo de segurança
-  let encryptedKey = apiKey;
-  if (window.securityUtils && typeof window.securityUtils.encryptApiKey === 'function') {
-    encryptedKey = window.securityUtils.encryptApiKey(apiKey);
-  } else {
-    console.warn('securityUtils não disponível para criptografia');
+  // Primeiro, salvar no localStorage
+  try {
+    localStorage.setItem('openai_api_key', apiKey);
+    console.log('Chave API salva localmente');
+  } catch (err) {
+    console.warn('Erro ao salvar chave API localmente:', err);
   }
   
   // Salvar no Firebase
-  return getUserRef(user.uid).update({
-    apiKey: encryptedKey,
-    lastUpdated: firebase.database.ServerValue.TIMESTAMP
-  })
-  .then(() => {
-    console.log('Chave API salva com sucesso');
-    return "Chave API salva com sucesso";
-  })
-  .catch((error) => {
-    console.error('Erro ao salvar chave API:', error);
-    throw error;
-  });
+  return getUserRef(user.uid).child('apiKey').set(apiKey)
+    .then(() => {
+      console.log('Chave API salva com sucesso no Firebase');
+      return "Chave API salva com sucesso";
+    })
+    .catch((error) => {
+      console.error('Erro ao salvar chave API no Firebase:', error);
+      throw error;
+    });
 }
 
-// Função para salvar uma transcrição
+/**
+ * Salva uma transcrição no Firebase
+ * @param {Object} transcriptionData - Dados da transcrição a ser salva
+ * @returns {Promise} Promise resolvida com a transcrição salva ou rejeitada com erro
+ */
 function saveTranscription(transcriptionData) {
+  if (!firebaseInitialized) {
+    console.warn("Firebase não está inicializado ao tentar salvar transcrição");
+    return Promise.reject(new Error("Firebase não está inicializado"));
+  }
+  
+  // Verificar autenticação
   const user = auth.currentUser;
   if (!user) {
     console.error('Usuário não está logado');
@@ -122,8 +146,7 @@ function saveTranscription(transcriptionData) {
   }
   
   // Usar ID existente ou criar um novo
-  const transcriptionId = transcriptionData.id || 
-                         getUserTranscriptionsRef(user.uid).push().key;
+  const transcriptionId = transcriptionData.id || getUserTranscriptionsRef(user.uid).push().key;
   
   // Dados completos da transcrição
   const transcription = {
@@ -131,12 +154,12 @@ function saveTranscription(transcriptionData) {
     text: transcriptionData.text,
     processedText: transcriptionData.processedText || '',
     processingType: transcriptionData.processingType || 'none',
-    createdAt: transcriptionData.createdAt || firebase.database.ServerValue.TIMESTAMP,
-    updatedAt: firebase.database.ServerValue.TIMESTAMP,
+    createdAt: transcriptionData.createdAt || Date.now(),
+    updatedAt: Date.now(),
     title: transcriptionData.title || `Transcrição ${new Date().toLocaleString()}`
   };
   
-  // Salvar no banco de dados
+  // Salvar no Firebase
   return getUserTranscriptionsRef(user.uid).child(transcriptionId).set(transcription)
     .then(() => {
       console.log('Transcrição salva com sucesso:', transcriptionId);
@@ -148,28 +171,50 @@ function saveTranscription(transcriptionData) {
     });
 }
 
-// Função para buscar todas as transcrições do usuário
+/**
+ * Busca todas as transcrições do usuário
+ * @returns {Promise} Promise resolvida com array de transcrições ou rejeitada com erro
+ */
 function getUserTranscriptions() {
+  if (!firebaseInitialized) {
+    console.warn("Firebase não está inicializado ao tentar buscar transcrições");
+    return Promise.reject(new Error("Firebase não está inicializado"));
+  }
+  
   const user = auth.currentUser;
   if (!user) {
     console.error('Usuário não está logado');
     return Promise.reject(new Error('Usuário não está logado'));
   }
   
+  // Buscar do Firebase
   return getUserTranscriptionsRef(user.uid)
-    .orderByChild('createdAt')
     .once('value')
     .then((snapshot) => {
       const transcriptions = [];
       snapshot.forEach((childSnapshot) => {
         transcriptions.push(childSnapshot.val());
       });
-      return transcriptions.reverse(); // Mais recentes primeiro
+      
+      return transcriptions.sort((a, b) => b.createdAt - a.createdAt); // Mais recentes primeiro
+    })
+    .catch(error => {
+      console.error('Erro ao buscar transcrições:', error);
+      throw error;
     });
 }
 
-// Função para excluir uma transcrição
+/**
+ * Exclui uma transcrição
+ * @param {string} transcriptionId - ID da transcrição a ser excluída
+ * @returns {Promise} Promise resolvida com true em caso de sucesso ou rejeitada com erro
+ */
 function deleteTranscription(transcriptionId) {
+  if (!firebaseInitialized) {
+    console.warn("Firebase não está inicializado ao tentar excluir transcrição");
+    return Promise.reject(new Error("Firebase não está inicializado"));
+  }
+  
   const user = auth.currentUser;
   if (!user) {
     console.error('Usuário não está logado');
@@ -180,6 +225,7 @@ function deleteTranscription(transcriptionId) {
     return Promise.reject(new Error('ID de transcrição não fornecido'));
   }
   
+  // Remover do Firebase
   return getUserTranscriptionsRef(user.uid).child(transcriptionId).remove()
     .then(() => {
       console.log('Transcrição excluída com sucesso:', transcriptionId);
@@ -191,8 +237,18 @@ function deleteTranscription(transcriptionId) {
     });
 }
 
-// Função para atualizar uma transcrição
+/**
+ * Atualiza uma transcrição existente
+ * @param {string} transcriptionId - ID da transcrição a ser atualizada
+ * @param {Object} updatedData - Novos dados para a transcrição
+ * @returns {Promise} Promise resolvida com os dados atualizados ou rejeitada com erro
+ */
 function updateTranscription(transcriptionId, updatedData) {
+  if (!firebaseInitialized) {
+    console.warn("Firebase não está inicializado ao tentar atualizar transcrição");
+    return Promise.reject(new Error("Firebase não está inicializado"));
+  }
+  
   const user = auth.currentUser;
   if (!user) {
     console.error('Usuário não está logado');
@@ -206,9 +262,10 @@ function updateTranscription(transcriptionId, updatedData) {
   // Adicionar timestamp de atualização
   const data = {
     ...updatedData,
-    updatedAt: firebase.database.ServerValue.TIMESTAMP
+    updatedAt: Date.now()
   };
   
+  // Atualizar no Firebase
   return getUserTranscriptionsRef(user.uid).child(transcriptionId).update(data)
     .then(() => {
       console.log('Transcrição atualizada com sucesso:', transcriptionId);
@@ -220,41 +277,53 @@ function updateTranscription(transcriptionId, updatedData) {
     });
 }
 
-// Função para carregar a chave API do usuário
+/**
+ * Carrega a chave API do usuário
+ * @returns {Promise} Promise resolvida com a chave API ou null se não existir
+ */
 function loadUserApiKey() {
+  if (!firebaseInitialized) {
+    console.warn("Firebase não está inicializado ao tentar carregar chave API");
+    
+    // Tentar carregar do localStorage como fallback
+    const localApiKey = localStorage.getItem('openai_api_key');
+    return Promise.resolve(localApiKey);
+  }
+  
   const user = auth.currentUser;
   if (!user) {
     console.error('Usuário não está logado');
     return Promise.reject(new Error('Usuário não está logado'));
   }
   
-  return getUserRef(user.uid).once('value')
+  // Verificar no Firebase
+  return getUserRef(user.uid).child('apiKey').once('value')
     .then(snapshot => {
-      const userData = snapshot.val();
-      if (!userData || !userData.apiKey) {
-        console.log('Chave API não encontrada para o usuário');
-        return null;
+      const apiKey = snapshot.val();
+      if (apiKey) {
+        // Salvar também no localStorage para acesso offline
+        try {
+          localStorage.setItem('openai_api_key', apiKey);
+        } catch (err) {
+          console.warn('Erro ao salvar chave API localmente:', err);
+        }
+        return apiKey;
       }
       
-      // Descriptografar a chave
-      let apiKey = userData.apiKey;
-      if (window.securityUtils && typeof window.securityUtils.decryptApiKey === 'function') {
-        apiKey = window.securityUtils.decryptApiKey(apiKey);
-      }
-      
-      return apiKey;
+      // Verificar localStorage como fallback
+      return localStorage.getItem('openai_api_key');
     })
     .catch(error => {
       console.error('Erro ao carregar chave API:', error);
-      throw error;
+      
+      // Tentar localStorage como fallback
+      return localStorage.getItem('openai_api_key');
     });
 }
 
 // Exportar funções para uso em outros scripts
 window.firebaseHelper = {
-  auth,
-  db,
-  createUserData,
+  isInitialized: () => firebaseInitialized,
   saveUserApiKey,
   saveTranscription,
   getUserTranscriptions,
@@ -262,3 +331,6 @@ window.firebaseHelper = {
   updateTranscription,
   loadUserApiKey
 };
+
+// Verificar se o Firebase foi inicializado corretamente
+console.log("Estado da inicialização do Firebase:", firebaseInitialized ? "SUCESSO" : "FALHA");
