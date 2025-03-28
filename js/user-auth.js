@@ -3,39 +3,49 @@
 function checkAuthState(callback) {
   console.log("Verificando estado de autenticação...");
 
-firebase.auth().onAuthStateChanged((user) => {
-  const currentPath = window.location.pathname;
-  const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login');
+  firebase.auth().onAuthStateChanged((user) => {
+    console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
 
-  if (window._isRedirecting) {
-    console.log("Redirecionamento em andamento, cancelando execução.");
-    return;
-  }
+    const currentPath = window.location.pathname;
+    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login') || currentPath.endsWith('/login.html');
 
-if (!user && !isLoginPage) {
-  window._isRedirecting = true;
-  console.log("Redirecionando para a página de login...");
-  if (callback) callback(null); // Garante que o index continue
-  window.location.replace('./login.html'); // Melhor do que setTimeout
-  return;
+    if (window._isRedirecting) {
+      console.log("Redirecionamento já em andamento. Abortando.");
+      return;
+    }
+
+    // 🔴 Usuário não autenticado fora da página de login
+    if (!user && !isLoginPage) {
+      window._isRedirecting = true;
+      console.log("Redirecionando para login...");
+      if (typeof callback === 'function') callback(null);
+      window.location.replace('./login.html');
+      return;
+    }
+
+    // 🟢 Usuário autenticado na página de login
+    if (user && isLoginPage) {
+      window._isRedirecting = true;
+      console.log("Usuário autenticado na página de login. Redirecionando para index...");
+      window.location.replace('./index.html');
+      return;
+    }
+
+    // ✅ Situação normal: usuário autenticado e página válida
+    if (user && !isLoginPage) {
+      console.log("Usuário autenticado, permanecendo na página atual.");
+      if (typeof callback === 'function') callback(user);
+      return;
+    }
+
+    // ⚪ Usuário não autenticado mas está na tela de login
+    if (!user && isLoginPage) {
+      console.log("Usuário não autenticado na tela de login.");
+      if (typeof callback === 'function') callback(null);
+    }
+  });
 }
 
-
-
-  if (user && isLoginPage) {
-    window._isRedirecting = true;
-    console.log("Usuário já autenticado, redirecionando para index...");
-    window.location.href = './index.html';
-    return;
-  }
-
-  // ⚠️ Aqui garante que mesmo sem redirecionamento, o callback roda!
-  if (callback && typeof callback === 'function') {
-    callback(user);
-  }
-});
-
-}
 
 
     // ✅ Usuário autenticado e ainda na tela de login
