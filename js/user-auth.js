@@ -7,34 +7,42 @@ function checkAuthState(callback) {
     console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
 
     const currentPath = window.location.pathname;
-    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login');
-    const isHomePage = currentPath.includes('index.html') || currentPath.endsWith('/') || currentPath.endsWith('/index');
+    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login') || currentPath.endsWith('/login.html');
 
-    // Se o usuário não está autenticado e não está na tela de login
+    // ⛔ Se já está redirecionando, cancela execução
+    if (window._isRedirecting) {
+      console.log("Redirecionamento já em andamento. Abortando.");
+      return;
+    }
+
+    // 🚫 Usuário não autenticado e fora da tela de login
     if (!user && !isLoginPage) {
-      if (!window._isRedirecting) {
-        window._isRedirecting = true;
-        console.log("Redirecionando para a página de login...");
+      window._isRedirecting = true;
+      console.log("Redirecionando para a página de login...");
+      setTimeout(() => {
         window.location.href = './login.html';
-      }
+      }, 100); // pequeno delay
       return;
     }
 
-    // Se o usuário está autenticado e está na tela de login
+    // ✅ Usuário autenticado e ainda na tela de login
     if (user && isLoginPage) {
-      if (!window._isRedirecting) {
-        window._isRedirecting = true;
-        console.log("Usuário já autenticado. Redirecionando para a página principal...");
+      window._isRedirecting = true;
+      console.log("Usuário autenticado. Redirecionando para index...");
+      setTimeout(() => {
         window.location.href = './index.html';
-      }
+      }, 100); // pequeno delay
       return;
     }
 
+    // 🔁 Nenhum redirecionamento necessário
     if (callback) {
       callback(user);
     }
   });
 }
+
+
 
 
 // Atualizar informações do usuário na interface
