@@ -66,7 +66,9 @@
     }
 
     function iniciarApp() {
+      console.log("Iniciando verificação de autenticação...");
       checkAuthState((user) => {
+        console.log("Callback do checkAuthState executado.");
         console.log("Usuário autenticado:", user?.uid || "não logado");
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -91,6 +93,14 @@
       console.log("Sem Service Worker. Iniciando app diretamente...");
       iniciarApp();
     }
+
+    // Fallback visual após 7 segundos
+    setTimeout(() => {
+      const splash = document.getElementById("splash");
+      if (splash && splash.style.display !== "none") {
+        splash.innerHTML += "<p style='color:red'>Tempo limite excedido. Verifique conexão ou autenticação.</p>";
+      }
+    }, 7000);
   </script>
 </body>
 </html>
