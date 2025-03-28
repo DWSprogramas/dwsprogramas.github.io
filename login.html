@@ -95,20 +95,12 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Verificar se o usuário já está logado
-firebase.auth().onAuthStateChanged((user) => {
-  const currentPage = window.location.pathname;
-  const isLoginPage = currentPage.includes('login.html');
-
-
-  if (user && isLoginPage) {
-    if (!window._isRedirecting) {
-      window._isRedirecting = true;
-      console.log('Usuário autenticado detectado. Redirecionando...');
-      window.location.href = './dashboard.html';
-    }
-  }
-});
-
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          // Usuário já está logado, redirecionar para a página principal
+          window.location.href = './index.html';
+        }
+      });
       
       // Configuração dos botões de login
       document.getElementById('login-button').addEventListener('click', () => {
