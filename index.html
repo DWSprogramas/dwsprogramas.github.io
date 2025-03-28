@@ -57,8 +57,8 @@
     <button onclick="alert('Gravação finalizada!')">Finalizar Gravação</button>
   </div>
 
-  <script src="/js/register-sw.js"></script>
-  <script src="/js/user-auth.js"></script>
+  <script src="js/register-sw.js"></script>
+  <script src="js/user-auth.js"></script>
   <script>
     function mostrarGravador() {
       document.getElementById("splash").style.display = "none";
@@ -85,10 +85,15 @@
     }
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        console.log("Service Worker pronto. Iniciando app...");
-        iniciarApp();
-      });
+      navigator.serviceWorker.register('js/register-sw.js')
+        .then(() => {
+          console.log("Service Worker registrado. Iniciando app...");
+          iniciarApp();
+        })
+        .catch((err) => {
+          console.warn("Service Worker não pôde ser registrado:", err);
+          iniciarApp();
+        });
     } else {
       console.log("Sem Service Worker. Iniciando app diretamente...");
       iniciarApp();
@@ -104,4 +109,3 @@
   </script>
 </body>
 </html>
-
