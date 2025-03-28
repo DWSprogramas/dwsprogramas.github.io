@@ -1999,6 +1999,25 @@
       }
     }
   </script>
+  <script>
+  // Código de emergência para debugging
+  setTimeout(() => {
+    console.log("Verificando se a aplicação está travada...");
+    const splash = document.getElementById('splash');
+    const app = document.getElementById('app');
+    
+    if (splash && !splash.classList.contains('hidden') && firebase.auth().currentUser) {
+      console.log("Detectado problema: splash ainda visível com usuário autenticado");
+      console.log("Tentando forçar a exibição da aplicação...");
+      
+      splash.classList.add('hidden');
+      if (app) {
+        app.classList.remove('hidden');
+        console.log("Aplicação forçada a ser exibida");
+      }
+    }
+  }, 5000); // Verificar após 5 segundos
+</script>
 </body>
 </html>Editar</span>
           </button>
