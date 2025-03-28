@@ -41,56 +41,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-// Verificar autenticação primeiro, antes de inicializar outros módulos
+  // Verificar autenticação primeiro, antes de inicializar outros módulos
   checkAuthState((user) => {
-  if (window._isRedirecting) {
-    console.log('Redirecionamento em andamento, abortando inicialização...');
-    return;
-  }
-
-
-  // Inicializar módulos se estiver autenticado ou na página de login
-  initUIComponents();
-
-  if (!window.location.pathname.includes('login.html')) {
-    initAudioRecorder();
-    initTranscription();
-    handleUrlParams();
-    loadApiKey();
-    handleUrlParams();
-
-    if (process.env.NODE_ENV !== 'production') {
-      window.debug = {
-        checkStorageQuota: window.storageUtils?.checkStorageQuota,
-        getStorageUsage: window.storageUtils?.getStorageUsage,
-        clearUserStorage: window.storageUtils?.clearUserStorage,
-        appState: window.appState,
-        verifyHttps: () => {
-          const allLinks = Array.from(document.querySelectorAll('a[href]'));
-          const allScripts = Array.from(document.querySelectorAll('script[src]'));
-          const allStyles = Array.from(document.querySelectorAll('link[href]'));
-          const allImages = Array.from(document.querySelectorAll('img[src]'));
-
-          const httpLinks = allLinks.filter(a => a.href.startsWith('http:'));
-          const httpScripts = allScripts.filter(s => s.src.startsWith('http:'));
-          const httpStyles = allStyles.filter(l => l.href.startsWith('http:'));
-          const httpImages = allImages.filter(i => i.src.startsWith('http:'));
-
-          return {
-            httpLinks,
-            httpScripts,
-            httpStyles,
-            httpImages,
-            hasHttpContent: httpLinks.length > 0 || httpScripts.length > 0 || httpStyles.length > 0 || httpImages.length > 0
-          };
-        }
-      };
+    if (!user && !window.location.pathname.includes('login.html')) {
+      console.log('Usuário não autenticado. Redirecionando para login...');
+      window.location.href = new URL('login.html', APP_BASE_URL).href;
+      return; // Parar a execução se redirecionando
     }
-  }
-
-  console.log('Aplicação inicializada.');
+    
+    console.log('Usuário autenticado ou na página de login. Inicializando módulos...');
+    
+    // Inicializar módulos se estiver autenticado ou na página de login
+    initUIComponents();
+    
+    // Apenas inicializar estes módulos se não estiver na página de login
+    if (!window.location.pathname.includes('login.html')) {
+      initAudioRecorder();
+      initTranscription();
+      handleUrlParams();
+      
+      // Carregar a chave API
+      loadApiKey();
+      
+      // Verificar se há parâmetros na URL
+      handleUrlParams();
+      
+      // Anexar funções de diagnóstico à janela para debugging (apenas em ambiente de desenvolvimento)
+      if (process.env.NODE_ENV !== 'production') {
+        window.debug = {
+          checkStorageQuota: window.storageUtils?.checkStorageQuota,
+          getStorageUsage: window.storageUtils?.getStorageUsage,
+          clearUserStorage: window.storageUtils?.clearUserStorage,
+          appState: window.appState,
+          verifyHttps: () => {
+            const allLinks = Array.from(document.querySelectorAll('a[href]'));
+            const allScripts = Array.from(document.querySelectorAll('script[src]'));
+            const allStyles = Array.from(document.querySelectorAll('link[href]'));
+            const allImages = Array.from(document.querySelectorAll('img[src]'));
+            
+            const httpLinks = allLinks.filter(a => a.href.startsWith('http:'));
+            const httpScripts = allScripts.filter(s => s.src.startsWith('http:'));
+            const httpStyles = allStyles.filter(l => l.href.startsWith('http:'));
+            const httpImages = allImages.filter(i => i.src.startsWith('http:'));
+            
+            return {
+              httpLinks,
+              httpScripts,
+              httpStyles,
+              httpImages,
+              hasHttpContent: httpLinks.length > 0 || httpScripts.length > 0 || httpStyles.length > 0 || httpImages.length > 0
+            };
+          }
+        };
+      }
+    }
+    
+    console.log('Aplicação inicializada.');
+  });
 });
-
 
 /**
  * Garante que a aplicação está usando HTTPS
