@@ -1,304 +1,242 @@
-// Funções de autenticação de usuário
-
-function checkAuthState(callback) {
-  console.log("Verificando estado de autenticação...");
-
-  firebase.auth().onAuthStateChanged((user) => {
-    console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
-
-    // ⚠️ Se já está redirecionando, não faz mais nada
-    if (window._isRedirecting) {
-      console.log("Redirecionamento já em andamento. Abortando.");
-      return;
+// Inicializar a interface de usuário
+// Inicializar a interface de usuário
+function initUI() {
+    // Configurar navegação por abas
+    setupTabs();
+    
+    // Configurar elementos editáveis
+    setupEditableFields();
+    
+    // Configurar instalação PWA
+    setupPWAInstall();
+    
+    // Mostrar informações do usuário se estiver logado
+    mostrarInfoUsuario();
+    
+    // Adicionar manipulador de evento para o botão de logout
+    const logoutButton = document.querySelector('.logout-button');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', logout);
     }
-
-    const currentPath = window.location.pathname;
-    const isLoginPage = currentPath.includes('login.html') || currentPath.endsWith('/login') || currentPath.endsWith('/login.html');
-
-    // 🚫 Se o usuário não está logado e não está na tela de login → redireciona
-    if (!user && !isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Redirecionando para a página de login...");
-      window.location.href = './login.html';
-      return; // ⛔ Impede execução abaixo
+    
+    // Configurar o manipulador de evento para o botão de salvar chave API
+    const saveApiKeyButton = document.getElementById('saveApiKey');
+    if (saveApiKeyButton) {
+        saveApiKeyButton.addEventListener('click', handleSaveApiKey);
     }
-
-    // ✅ Se o usuário está logado mas ainda está na tela de login → redireciona
-    if (user && isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Usuário já autenticado. Redirecionando para a página principal...");
-      window.location.href = './index.html';
-      return; // ⛔ Impede execução abaixo
-    }
-
-    // 👇 Se nenhum redirecionamento foi necessário, executa o callback normalmente
-    if (callback) {
-      callback(user);
-    }
-  });
 }
 
-
-
-// Atualizar informações do usuário na interface
-function updateUserInfo(user) {
-  const userNameElement = document.getElementById('user-name');
-  const userEmailElement = document.getElementById('user-email');
-  const userPhotoElement = document.getElementById('user-photo');
-  
-  if (userNameElement && user) {
-    userNameElement.textContent = user.displayName || 'Usuário';
-  }
-  
-  if (userEmailElement && user) {
-    userEmailElement.textContent = user.email || '';
-  }
-  
-  if (userPhotoElement && user) {
-    if (user.photoURL) {
-      userPhotoElement.src = user.photoURL;
-      userPhotoElement.style.display = 'block';
-    } else {
-      // Se não tiver foto, mostrar inicial do nome
-      const initials = (user.displayName || 'U').charAt(0).toUpperCase();
-      userPhotoElement.style.display = 'none';
-      const userInitials = document.getElementById('user-initials');
-      if (userInitials) {
-        userInitials.textContent = initials;
-        userInitials.style.display = 'flex';
-      }
-    }
-  }
-}
-
-// Carregar dados do usuário do Realtime Database
-function loadUserData(userId) {
-  return firebase.database().ref('users/' + userId).once('value')
-    .then((snapshot) => {
-      return snapshot.val();
-    })
-    .catch((error) => {
-      console.error('Erro ao carregar dados do usuário:', error);
-      return null;
-    });
-}
-
-// Logout do usuário
-function logout() {
-  firebase.auth().signOut()
-    .then(() => {
-      console.log('Usuário deslogado com sucesso');
-      window.location.href = './login.html';
-    })
-    .catch((error) => {
-      console.error('Erro ao fazer logout:', error);
-      showError('Erro ao fazer logout: ' + error.message);
-    });
-}
-
-// Login com email e senha
-function loginWithEmail(email, password) {
-  // Mostrar indicador de carregamento
-  const loginButton = document.getElementById('login-button');
-  if (loginButton) {
-    const originalButtonContent = loginButton.innerHTML;
-    loginButton.innerHTML = '<span class="material-icons">hourglass_top</span> Entrando...';
-    loginButton.disabled = true;
-  }
-  
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      // Login bem-sucedido
-      console.log('Login com email bem-sucedido:', userCredential.user.uid);
-      window.location.href = './index.html';
-    })
-    .catch((error) => {
-      console.error('Erro de login com email:', error);
-      
-      // Restaurar botão
-      if (loginButton) {
-        loginButton.innerHTML = '<span class="material-icons">login</span> Entrar';
-        loginButton.disabled = false;
-      }
-      
-      // Mostrar mensagem de erro apropriada
-      let errorMessage = 'Erro ao fazer login. Verifique seu email e senha.';
-      
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'Usuário não encontrado. Verifique seu email ou crie uma conta.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Senha incorreta. Tente novamente.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Email inválido. Verifique o formato do email.';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
-      }
-      
-      // Mostrar mensagem
-      showError(errorMessage);
-    });
-}
-
-// Login com Google
-function loginWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  
-  // Mostrar indicador de carregamento
-  const googleButton = document.getElementById('google-login');
-  if (googleButton) {
-    const originalButtonContent = googleButton.innerHTML;
-    googleButton.innerHTML = '<span class="material-icons">hourglass_top</span> Conectando...';
-    googleButton.disabled = true;
-  }
-  
-  firebase.auth().signInWithPopup(provider)
-    .then((result) => {
-      // Login bem-sucedido
-      const user = result.user;
-      console.log('Login com Google bem-sucedido:', user.uid);
-      
-      // Verificar se é um novo usuário
-      const isNewUser = result.additionalUserInfo.isNewUser;
-      if (isNewUser) {
-        // Criar dados iniciais do usuário
-        createUserData(user.uid);
-      }
-      
-      // Redirecionar para a página principal
-      window.location.href = './index.html';
-    })
-    .catch((error) => {
-      console.error('Erro de login com Google:', error);
-      
-      // Restaurar botão
-      if (googleButton) {
-        googleButton.innerHTML = '<span class="material-icons google-icon">g_translate</span> Continuar com Google';
-        googleButton.disabled = false;
-      }
-      
-      // Mostrar mensagem de erro
-      showError('Erro ao entrar com Google: ' + error.message);
-    });
-}
-
-// Registrar novo usuário
-function registerUser(email, password, name) {
-  // Mostrar indicador de carregamento
-  const registerButton = document.getElementById('register-button');
-  if (registerButton) {
-    const originalButtonContent = registerButton.innerHTML;
-    registerButton.innerHTML = '<span class="material-icons">hourglass_top</span> Registrando...';
-    registerButton.disabled = true;
-  }
-  
-  firebase.auth().createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      // Conta criada com sucesso
-      const user = userCredential.user;
-      console.log('Usuário registrado com sucesso:', user.uid);
-      
-      // Atualizar o perfil do usuário com o nome
-      return user.updateProfile({
-        displayName: name
-      }).then(() => {
-        // Criar dados iniciais do usuário
-        createUserData(user.uid);
+// Função para mostrar informações do usuário na interface
+function mostrarInfoUsuario() {
+    console.log('Verificando usuário para mostrar informações...');
+    
+    // Verificar se o Firebase está disponível
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        const usuarioAtual = firebase.auth().currentUser;
         
-        // Redirecionar para a página principal
-        window.location.href = './index.html';
-      });
-    })
-    .catch((error) => {
-      console.error('Erro ao registrar usuário:', error);
-      
-      // Restaurar botão
-      if (registerButton) {
-        registerButton.innerHTML = '<span class="material-icons">person_add</span> Cadastrar';
-        registerButton.disabled = false;
-      }
-      
-      // Mostrar mensagem de erro apropriada
-      let errorMessage = 'Erro ao criar conta. Tente novamente.';
-      
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'Este email já está em uso. Tente fazer login.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Email inválido. Verifique o formato do email.';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
-      }
-      
-      // Mostrar mensagem
-      showError(errorMessage);
-    });
-}
-
-// Criar estrutura inicial de dados do usuário
-function createUserData(userId) {
-  const userData = {
-    createdAt: new Date().toISOString(),
-    settings: {
-      theme: 'light',
-      notifications: true
-    },
-    transcriptions: {
-      count: 0
+        if (usuarioAtual) {
+            console.log('Usuário autenticado:', usuarioAtual.email);
+            
+            // Mostrar elementos que devem ser visíveis apenas para usuários logados
+            const elementosLogados = document.querySelectorAll('.auth-logged-in');
+            elementosLogados.forEach(el => {
+                el.style.display = 'block';
+            });
+            
+            // Atualizar o email do usuário em todos os elementos com ID userEmail
+            const elementosEmail = document.querySelectorAll('#userEmail');
+            elementosEmail.forEach(el => {
+                el.textContent = usuarioAtual.email;
+            });
+            
+            // Atualizar o nome do usuário se disponível
+            const nomeUsuario = usuarioAtual.displayName || 'Usuário';
+            const elementosNome = document.querySelectorAll('#userName');
+            elementosNome.forEach(el => {
+                el.textContent = nomeUsuario;
+            });
+            
+            // Adicionar avatar ou iniciais se disponível
+            if (elementosNome.length > 0 && usuarioAtual.photoURL) {
+                const elementosAvatar = document.querySelectorAll('.user-avatar');
+                elementosAvatar.forEach(el => {
+                    el.src = usuarioAtual.photoURL;
+                    el.style.display = 'block';
+                });
+            } else {
+                // Mostrar iniciais
+                const iniciais = (nomeUsuario.charAt(0) || 'U').toUpperCase();
+                const elementosIniciais = document.querySelectorAll('.user-initials');
+                elementosIniciais.forEach(el => {
+                    el.textContent = iniciais;
+                    el.style.display = 'flex';
+                });
+            }
+        } else {
+            console.log('Nenhum usuário autenticado');
+            
+            // Esconder elementos que devem ser visíveis apenas para usuários logados
+            const elementosLogados = document.querySelectorAll('.auth-logged-in');
+            elementosLogados.forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+    } else {
+        console.error('Firebase Auth não está disponível');
     }
-  };
-  
-  return firebase.database().ref('users/' + userId).set(userData)
-    .then(() => {
-      console.log('Dados iniciais do usuário criados com sucesso');
-      return userData;
-    })
-    .catch((error) => {
-      console.error('Erro ao criar dados iniciais do usuário:', error);
-      return null;
+}
+
+// Configurar abas de navegação
+function setupTabs() {
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remover classe ativa de todas as abas
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            // Adicionar classe ativa à aba clicada
+            tab.classList.add('active');
+            const tabId = tab.getAttribute('data-tab');
+            document.getElementById(tabId + 'Tab').classList.add('active');
+            
+            // Se a aba for histórico, carregar as transcrições
+            if (tabId === 'history') {
+                loadTranscriptionsList();
+            }
+        });
     });
 }
 
-// Função para mostrar mensagens de erro
-function showError(message) {
-  // Verifica se já existe um elemento de mensagem
-  let messageElement = document.getElementById('message-container');
-  if (!messageElement) {
-    // Cria o elemento se não existir
-    messageElement = document.createElement('div');
-    messageElement.id = 'message-container';
-    document.body.appendChild(messageElement);
-  }
-  
-  // Limpa qualquer mensagem anterior
-  messageElement.innerHTML = '';
-  
-  // Cria o elemento da nova mensagem
-  const msg = document.createElement('div');
-  msg.className = 'message message-error';
-  msg.textContent = message;
-  
-  // Adiciona à área de mensagens
-  messageElement.appendChild(msg);
-  
-  // Remove após 4 segundos
-  setTimeout(() => {
-    msg.classList.add('fade-out');
-    setTimeout(() => {
-      if (messageElement.contains(msg)) {
-        messageElement.removeChild(msg);
-      }
-    }, 500);
-  }, 4000);
+// Configurar campos editáveis
+function setupEditableFields() {
+    const editableElements = document.querySelectorAll('.editable');
+    editableElements.forEach(el => {
+        el.addEventListener('focus', () => {
+            el.style.borderColor = '#3498db';
+            el.style.boxShadow = '0 0 5px rgba(52, 152, 219, 0.5)';
+        });
+        
+        el.addEventListener('blur', () => {
+            el.style.borderColor = '#ccc';
+            el.style.boxShadow = 'none';
+            
+            // Se for o campo de transcrição, atualizar o estado de habilitação do botão de processar
+            if (el.id === 'transcription') {
+                document.getElementById('processText').disabled = el.textContent.trim() === '';
+            }
+        });
+    });
 }
 
-// Adicionar estas funções ao objeto de exportação
-window.authUtils = {
-  checkAuthState,
-  updateUserInfo,
-  logout,
-  loadUserData,
-  loginWithEmail,
-  loginWithGoogle,
-  registerUser,
-  showError,
-  createUserData
-};
+// Configurar instalação PWA
+function setupPWAInstall() {
+    const pwaInstallPrompt = document.getElementById('pwaInstallPrompt');
+    const installButton = document.getElementById('installButton');
+    const dismissButton = document.getElementById('dismissButton');
+    
+    // Variável para armazenar o evento beforeinstallprompt
+    let deferredPrompt;
+    
+    // Detectar se o app já está instalado ou pode ser instalado
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Previne o comportamento padrão
+        e.preventDefault();
+        // Armazena o evento para que possa ser acionado mais tarde
+        deferredPrompt = e;
+        // Mostra o banner de instalação
+        pwaInstallPrompt.style.display = 'block';
+    });
+    
+    // Lidar com o botão de instalação
+    if (installButton) {
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            // Mostra o prompt de instalação
+            deferredPrompt.prompt();
+            
+            // Espera pelo resultado
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`Usuário ${outcome === 'accepted' ? 'aceitou' : 'recusou'} a instalação`);
+            
+            // Limpa a variável, pois o prompt só pode ser usado uma vez
+            deferredPrompt = null;
+            
+            // Esconde o banner
+            pwaInstallPrompt.style.display = 'none';
+        });
+    }
+    
+    // Lidar com o botão de dispensar
+    if (dismissButton) {
+        dismissButton.addEventListener('click', () => {
+            pwaInstallPrompt.style.display = 'none';
+        });
+    }
+    
+    // Verificar se o app já está instalado
+    window.addEventListener('appinstalled', () => {
+        // Esconde o banner
+        pwaInstallPrompt.style.display = 'none';
+        deferredPrompt = null;
+        console.log('PWA foi instalado');
+    });
+}
+
+// Em ui-controller.js
+ function loadTranscriptionsList() {
+  // Chamar a implementação do módulo de transcrição
+  if (window.transcriptionUtils && window.transcriptionUtils.loadTranscriptionsList) {
+    window.transcriptionUtils.loadTranscriptionsList();
+  } else {
+    console.error('Módulo de transcrição não disponível');
+  }
+}
+
+
+// Manipulador para o botão de salvar chave API
+function handleSaveApiKey() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    if (apiKey && apiKey.startsWith("sk-")) {
+        // Salvar localmente
+        window.storageUtils.saveApiKeyLocally(apiKey);
+        
+        // Salvar no Firebase se o usuário estiver logado
+        if (firebase.auth().currentUser) {
+            window.firebaseHelper.saveUserApiKey(apiKey)
+                .then(() => {
+                    updateStatus("Chave API salva com sucesso!");
+                })
+                .catch((error) => {
+                    showError("Erro ao salvar chave API: " + error.message);
+                });
+        } else {
+            updateStatus("Chave API salva localmente com sucesso!");
+        }
+    } else {
+        showError("Chave API inválida. Deve começar com 'sk-'");
+    }
+}
+
+// Atualizar status
+function updateStatus(message, isError = false) {
+    const statusDiv = document.getElementById('status');
+    const errorDiv = document.getElementById('error');
+    
+    if (isError) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        statusDiv.textContent = 'Pronto para gravar. Clique em "Iniciar Gravação".';
+    } else {
+        statusDiv.textContent = message;
+        errorDiv.style.display = 'none';
+    }
+}
+
+// Mostrar erro
+function showError(message) {
+    updateStatus(message, true);
+}
