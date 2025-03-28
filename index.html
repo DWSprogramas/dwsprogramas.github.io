@@ -29,8 +29,10 @@
   <script src="js/app.js"></script>
   <script src="js/user-auth.js"></script>
   <script>
-    checkAuthState((user) => {
-      if (user) {
+    window.addEventListener('DOMContentLoaded', () => {
+      checkAuthState((user) => {
+        if (!user) return; // redirecionamento já tratado em user-auth.js
+
         const urlParams = new URLSearchParams(window.location.search);
         const action = urlParams.get('action');
 
@@ -38,67 +40,22 @@
           document.getElementById('loading-screen').style.display = 'none';
           document.getElementById('app').style.display = 'block';
 
-          // Aqui você pode carregar os botões de gravação
           const appDiv = document.getElementById('app');
           const btn = document.createElement('button');
           btn.textContent = 'Iniciar Gravação';
-          btn.onclick = () => alert('Gravando...'); // substitua por lógica real
+          btn.onclick = () => alert('Gravando...');
           appDiv.appendChild(btn);
         }
-      } else {
-        document.getElementById('error-message').textContent = 'Tempo limite excedido. Verifique conexão ou autenticação.';
-      }
-    });
-  </script>
-</body>
-</html>
- html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#4CAF50" />
-  <title>MapzyVox IA</title>
-
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: #f0f0f0;
-      text-align: center;
-    }
-    .splash {
-      max-width: 300px;
-    }
-  </style>
-</head>
-<body>
-  <div class="splash">
-    <h1>MapzyVox IA</h1>
-    <p>Carregando aplicação...</p>
-  </div>
-
-  <script src="/js/register-sw.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 500);
       });
-    } else {
-      window.location.href = "login.html";
-    }
+
+      // Fallback: mostrar erro após 6s se nada acontecer
+      setTimeout(() => {
+        const appVisible = document.getElementById('app').style.display === 'block';
+        if (!appVisible) {
+          document.getElementById('error-message').textContent = 'Tempo limite excedido. Verifique conexão ou autenticação.';
+        }
+      }, 6000);
+    });
   </script>
 </body>
 </html>
