@@ -3,6 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <title>MapzyVox IA</title>
+</head>
+<body>
+  <div class="loading-screen" id="loading-screen">
+    <h1>MapzyVox IA</h1>
+    <p>Carregando aplicação...</p>
+    <p id="error-message" style="color: red;"></p>
+  </div>
+
+  <div id="app" style="display: none;">
+    <h2>Página Inicial</h2>
+    <p>Bem-vindo ao app MapzyVox IA.</p>
+    <!-- Os botões de gravação serão inseridos dinamicamente -->
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/user-auth.js"></script>
+  <script>
+    checkAuthState((user) => {
+      if (user) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+
+        if (action === 'record') {
+          document.getElementById('loading-screen').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+
+          // Aqui você pode carregar os botões de gravação
+          const appDiv = document.getElementById('app');
+          const btn = document.createElement('button');
+          btn.textContent = 'Iniciar Gravação';
+          btn.onclick = () => alert('Gravando...'); // substitua por lógica real
+          appDiv.appendChild(btn);
+        }
+      } else {
+        document.getElementById('error-message').textContent = 'Tempo limite excedido. Verifique conexão ou autenticação.';
+      }
+    });
+  </script>
+</body>
+</html>
+ html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#4CAF50" />
   <title>MapzyVox IA</title>
 
