@@ -81,23 +81,33 @@
   </div>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM carregado, verificando autenticação...');
+      
+      // Verificar autenticação
       firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-          window.location.href = './index.html?action=record';
+          console.log('Usuário já autenticado, redirecionando para a página principal...');
+          window.location.href = './index.html';
+        } else {
+          console.log('Usuário não autenticado, permanecendo na página de login');
         }
       });
 
       document.getElementById('login-button').addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        
         if (!email || !password) {
           window.authUtils.showError('Por favor, preencha todos os campos');
           return;
         }
+        
+        console.log('Tentando login com email...');
         window.authUtils.loginWithEmail(email, password);
       });
 
       document.getElementById('google-login').addEventListener('click', () => {
+        console.log('Tentando login com Google...');
         window.authUtils.loginWithGoogle();
       });
 
@@ -117,16 +127,20 @@
           return;
         }
 
+        console.log('Tentando registrar novo usuário...');
         window.authUtils.registerUser(email, password, name);
       });
 
       document.getElementById('forgot-password').addEventListener('click', (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value;
+        
         if (!email) {
           window.authUtils.showError('Por favor, digite seu e-mail');
           return;
         }
+        
+        console.log('Enviando email de recuperação de senha...');
         firebase.auth().sendPasswordResetEmail(email)
           .then(() => {
             alert('Um email de redefinição de senha foi enviado para ' + email);
@@ -137,17 +151,24 @@
           });
       });
 
+      // Permitir envio do formulário de login pressionando Enter
       document.getElementById('password').addEventListener('keyup', (event) => {
         if (event.key === 'Enter') {
           document.getElementById('login-button').click();
         }
       });
 
+      // Permitir envio do formulário de registro pressionando Enter
       document.getElementById('reg-password-confirm').addEventListener('keyup', (event) => {
         if (event.key === 'Enter') {
           document.getElementById('register-button').click();
         }
       });
+      
+      // Verificação adicional para debugging
+      console.log('Firebase disponível:', typeof firebase !== 'undefined');
+      console.log('Firebase auth disponível:', firebase && typeof firebase.auth === 'function');
+      console.log('authUtils disponível:', typeof window.authUtils !== 'undefined');
     });
   </script>
 </body>
