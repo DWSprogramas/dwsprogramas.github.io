@@ -35,16 +35,73 @@
   </div>
 
   <script src="/js/register-sw.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 500);
+  <script src="/js/user-auth.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(() => {
+      // Após o service worker estar pronto, verifica autenticação
+      checkAuthState((user) => {
+        console.log("Autenticação verificada após SW. Usuário:", user?.uid || "não logado");
+
+        // Se há parâmetros como ?action=record ou ?action=history, mantém na mesma página
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+
+        if (!action) {
+          // Sem ação específica, ir para dashboard
+          window.location.href = "./dashboard.html";
+        } else {
+          // Mantém na index.html com ação
+          console.log("Mantendo na index.html para ação:", action);
+        }
       });
-    } else {
-      window.location.href = "login.html";
-    }
-  </script>
+    });
+  } else {
+    // Se SW não estiver disponível, verifica auth imediatamente
+    checkAuthState((user) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const action = urlParams.get('action');
+
+      if (!action) {
+        window.location.href = "./dashboard.html";
+      } else {
+        console.log("Mantendo na index.html com ação:", action);
+      }
+    });
+  }
+</script>
+<script src="/js/register-sw.js"></script>
+<script src="/js/user-auth.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(() => {
+      checkAuthState((user) => {
+        console.log("Autenticação verificada após SW. Usuário:", user?.uid || "não logado");
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+
+        if (!action) {
+          window.location.href = "./dashboard.html";
+        } else {
+          console.log("Mantendo na index.html para ação:", action);
+        }
+      });
+    });
+  } else {
+    checkAuthState((user) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const action = urlParams.get('action');
+
+      if (!action) {
+        window.location.href = "./dashboard.html";
+      } else {
+        console.log("Mantendo na index.html com ação:", action);
+      }
+    });
+  }
+</script>
+
+
 </body>
 </html>
