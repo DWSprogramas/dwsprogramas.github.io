@@ -26,14 +26,19 @@ function checkAuthState(callback) {
     }
 
     // ✅ Usuário autenticado e ainda está na tela de login
-    if (user && isLoginPage) {
-      window._isRedirecting = true;
-      console.log("Usuário autenticado. Redirecionando para index...");
-      setTimeout(() => {
-        window.location.href = './index.html';
-      }, 100);
-      return;
-    }
+if (user && isLoginPage) {
+  const isAlreadyOnIndex = currentPath.includes('index.html') || currentPath === '/' || currentPath === '/index';
+
+  if (!isAlreadyOnIndex) {
+    window._isRedirecting = true;
+    console.log("Usuário autenticado. Redirecionando para index...");
+    setTimeout(() => {
+      window.location.href = './index.html';
+    }, 100);
+    return;
+  }
+}
+
 
     // 🧠 ⚠️ Aqui estava faltando a chamada
     if (callback && typeof callback === 'function') {
