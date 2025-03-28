@@ -43,6 +43,7 @@
   <script src="./js/ui-controller.js"></script>
   <script src="./js/app.js" defer></script>
   <script src="./js/register-sw.js" defer></script>
+  <script src="./js/diagnostico.js" defer></script>
 </head>
 <body>
   <div id="splash" class="splash">
@@ -92,29 +93,28 @@
     }
 
     function initApp() {
-      console.log('Iniciando aplicação...');
-      
-      // Verificar o estado de autenticação
+      console.log('Iniciando verificação de autenticação...');
       firebase.auth().onAuthStateChanged((user) => {
-        console.log('Estado de autenticação alterado:', user ? 'Usuário logado' : 'Usuário não logado');
-        
+        console.log("Estado de autenticação:", user ? "Logado como " + (user.email || user.uid) : "Não logado");
         if (user) {
-          // Usuário está logado
-          console.log('Usuário autenticado:', user.uid);
-          
-          // Exibir nome do usuário
-          document.getElementById('user-name').textContent = user.displayName || user.email;
-          
-          // Armazenar ID do usuário globalmente
+          console.log('Usuário autenticado, configurando interface...');
+          document.getElementById('user-name').textContent = user.displayName || user.email || "Usuário";
           window.userId = user.uid;
           
-          // Carregar histórico do usuário
-          loadUserHistory(user.uid);
+          try {
+            console.log('Carregando histórico do usuário...');
+            if (typeof loadUserHistory === 'function') {
+              loadUserHistory(user.uid);
+            } else {
+              console.warn('Função loadUserHistory não encontrada');
+            }
+          } catch (error) {
+            console.error('Erro ao carregar histórico:', error);
+          }
           
-          // Mostrar a aplicação
+          console.log('Mostrando a aplicação...');
           showApp();
         } else {
-          // Usuário não está logado, redirecionar para a página de login
           console.log('Usuário não autenticado, redirecionando para login...');
           window.location.href = './login.html';
         }
@@ -122,63 +122,71 @@
     }
 
     function loadUserHistory(userId) {
-      // Esta função será implementada no módulo de transcrição
-      console.log('Carregando histórico do usuário:', userId);
+      console.log('Carregando histórico para userId:', userId);
+      // Tentativa de usar o transcriptionUtils se disponível
       if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
-        window.transcriptionUtils.loadTranscriptionsList();
+        try {
+          window.transcriptionUtils.loadTranscriptionsList();
+        } catch (error) {
+          console.error('Erro ao carregar lista de transcrições:', error);
+        }
+      } else {
+        console.warn('transcriptionUtils não disponível para carregar histórico');
       }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
       console.log('DOM carregado, inicializando aplicação...');
       
-      // Definir um tempo máximo de espera (fallback)
-      const timeoutFallback = new Promise(resolve => setTimeout(() => {
-        console.log('Tempo máximo de espera atingido');
-        resolve();
-      }, 3000));
-      
-      // Verificar se o Service Worker está pronto
-      const swReady = ('serviceWorker' in navigator) 
-        ? navigator.serviceWorker.ready
-        : Promise.resolve();
-      
-      // Iniciar o app após o Service Worker estar pronto ou após o timeout
-      Promise.race([swReady, timeoutFallback]).then(() => {
-        console.log('Service Worker pronto ou timeout atingido, iniciando aplicação');
+      const timeoutFallback = new Promise(resolve => setTimeout(resolve, 1500));
+
+      Promise.race([
+        new Promise(resolve => {
+          if ('serviceWorker' in navigator) {
+            console.log('Aguardando Service Worker...');
+            navigator.serviceWorker.ready.then(resolve);
+          } else {
+            console.log('Service Worker não suportado');
+            resolve();
+          }
+        }),
+        timeoutFallback
+      ]).then(() => {
+        console.log('Iniciando app após carregamento de Service Worker ou timeout');
         initApp();
       });
-      
-      // Configurar botões
+
       document.getElementById("logout-button").addEventListener("click", () => {
         console.log('Botão de logout clicado');
         firebase.auth().signOut().then(() => {
-          console.log('Logout realizado com sucesso');
           window.location.href = './login.html';
-        }).catch(error => {
-          console.error('Erro ao fazer logout:', error);
         });
       });
-      
+
       document.getElementById("start-recording").addEventListener("click", () => {
-        console.log('Botão de iniciar gravação clicado');
-        if (window.initAudioRecorder && typeof startRecording === 'function') {
+        if (typeof startRecording === 'function') {
           startRecording();
+        } else {
+          console.error('Função startRecording não encontrada');
         }
       });
       
       document.getElementById("stop-recording").addEventListener("click", () => {
-        console.log('Botão de parar gravação clicado');
         if (typeof stopRecording === 'function') {
           stopRecording();
+        } else {
+          console.error('Função stopRecording não encontrada');
         }
       });
       
       document.getElementById("process-text").addEventListener("click", () => {
-        console.log('Botão de processar texto clicado');
         const text = document.getElementById("transcription-text").value;
-        if (text.trim() && typeof processTranscription === 'function') {
-          processTranscription(text);
+        if (text.trim()) {
+          if (typeof processTranscription === 'function') {
+            processTranscription(text);
+          } else {
+            console.error('Função processTranscription não encontrada');
+          }
         }
       });
     });
