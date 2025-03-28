@@ -3,503 +3,193 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapzy Vox IA - Assistente de Transcrição</title>
+  <title>Mapzy Vox IA - Página Inicial</title>
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-  <meta name="theme-color" content="#4361ee">
+  <meta name="theme-color" content="#3498db">
   <link rel="manifest" href="./manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  
-  <!-- Carregando estilos -->
-  <link rel="stylesheet" href="./styles.css">
-  
-  <!-- Carregando Firebase -->
+  <link rel="stylesheet" href="./css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f4f4f4;
+      color: #2c3e50;
+    }
+    .splash h1 {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .splash p {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+    }
+    .hidden { display: none; }
+  </style>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  
-  <!-- Carregando módulos base -->
   <script src="./js/firebase-config.js"></script>
   <script src="./js/security.js"></script>
   <script src="./js/storage-manager.js"></script>
   <script src="./js/user-auth.js"></script>
-</head>
-<body>
-  <!-- Tela de Loading -->
-  <div id="splash" class="splash">
-    <div class="splash-logo">
-      <i class="material-icons-round">mic</i>
-    </div>
-    <h1>Mapzy Vox IA</h1>
-    <p id="status-text">Carregando aplicação...</p>
-    <div class="loader"></div>
-  </div>
-
-  <!-- Aplicação Principal -->
-  <div id="app" class="app-container hidden">
-    <!-- Sidebar / Menu Lateral -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">
-          <i class="material-icons-round">mic</i>
-          <span>Mapzy Vox IA</span>
-        </div>
-      </div>
-      
-      <div class="user-profile">
-        <div class="user-avatar" id="user-avatar">
-          <span id="user-initials">U</span>
-          <img id="user-photo" style="display: none;" alt="Avatar do usuário">
-        </div>
-        <div class="user-info">
-          <div class="user-name" id="user-name">Usuário</div>
-          <div class="user-email" id="user-email">usuario@email.com</div>
-        </div>
-      </div>
-      
-      <nav class="sidebar-nav">
-        <div class="nav-section">
-          <div class="nav-section-title">Principal</div>
-          <ul class="nav-items">
-            <li class="nav-item">
-              <a href="#dashboard" class="nav-link active" data-page="dashboard">
-                <i class="material-icons-round">dashboard</i>
-                <span>Dashboard</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="#record" class="nav-link" data-page="record">
-                <i class="material-icons-round">fiber_manual_record</i>
-                <span>Nova Gravação</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="#history" class="nav-link" data-page="history">
-                <i class="material-icons-round">history</i>
-                <span>Histórico</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-        
-        <div class="nav-section">
-          <div class="nav-section-title">Configurações</div>
-          <ul class="nav-items">
-            <li class="nav-item">
-              <a href="#settings" class="nav-link" data-page="settings">
-                <i class="material-icons-round">settings</i>
-                <span>Preferências</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="#api" class="nav-link" data-page="api">
-                <i class="material-icons-round">vpn_key</i>
-                <span>Chave API</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-      
-      <div class="sidebar-footer">
-        <button id="logout-button" class="btn btn-secondary btn-fluid">
-          <i class="material-icons-round">logout</i>
-          <span>Sair</span>
-        </button>
-        <div class="version">v1.0.0</div>
-      </div>
-    </aside>
-    
-    <!-- Conteúdo Principal -->
-    <main class="main-content">
-      <!-- Barra Superior -->
-      <div class="top-bar">
-        <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-          <i class="material-icons-round">menu</i>
-        </button>
-        <h1 class="page-title" id="page-title">Dashboard</h1>
-        <div class="actions">
-          <a href="#record" class="btn btn-primary" data-page="record">
-            <i class="material-icons-round">add</i>
-            <span>Nova Gravação</span>
-          </a>
-        </div>
-      </div>
-      
-      <!-- Páginas de Conteúdo -->
-      <!-- Dashboard -->
-      <div id="dashboard-page" class="page-content">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">insert_chart</i>
-              <span>Resumo das Atividades</span>
-            </h2>
-          </div>
-          <div class="card-body">
-            <div class="d-flex gap-md mb-lg" style="flex-wrap: wrap;">
-              <div style="flex: 1; min-width: 180px;" class="card">
-                <div class="text-center">
-                  <i class="material-icons-round" style="font-size: 36px; color: var(--primary); margin-bottom: 8px;">description</i>
-                  <h3 id="total-transcriptions" style="font-size: 28px; font-weight: 600;">0</h3>
-                  <p style="color: var(--text-secondary);">Transcrições</p>
-                </div>
-              </div>
-              <div style="flex: 1; min-width: 180px;" class="card">
-                <div class="text-center">
-                  <i class="material-icons-round" style="font-size: 36px; color: var(--accent); margin-bottom: 8px;">calendar_today</i>
-                  <h3 id="latest-activity" style="font-size: 28px; font-weight: 600;">-</h3>
-                  <p style="color: var(--text-secondary);">Última atividade</p>
-                </div>
-              </div>
-              <div style="flex: 1; min-width: 180px;" class="card">
-                <div class="text-center">
-                  <i class="material-icons-round" style="font-size: 36px; color: var(--success); margin-bottom: 8px;">save</i>
-                  <h3 id="saved-data" style="font-size: 28px; font-weight: 600;">0 KB</h3>
-                  <p style="color: var(--text-secondary);">Dados salvos</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">history</i>
-              <span>Transcrições Recentes</span>
-            </h2>
-            <a href="#history" class="btn btn-secondary" data-page="history">
-              <span>Ver todas</span>
-              <i class="material-icons-round">arrow_forward</i>
-            </a>
-          </div>
-          <div class="card-body">
-            <div id="recent-transcriptions-spinner" class="text-center mb-md" style="display: none;">
-              <div class="loader" style="margin: 0 auto;"></div>
-            </div>
-            <div id="empty-state-recent" class="empty-state" style="display: none;">
-              <i class="material-icons-round empty-state-icon">note_alt</i>
-              <p class="empty-state-text">Você ainda não tem transcrições. Vamos começar gravando uma!</p>
-              <a href="#record" class="btn btn-primary" data-page="record">
-                <i class="material-icons-round">mic</i>
-                <span>Nova Gravação</span>
-              </a>
-            </div>
-            <ul id="recent-transcriptions" class="history-list"></ul>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Página de Gravação -->
-      <div id="record-page" class="page-content" style="display: none;">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">mic</i>
-              <span>Nova Gravação</span>
-            </h2>
-          </div>
-          <div class="card-body">
-            <div class="recording-area">
-              <div class="recording-visualizer">
-                <div class="visualizer-placeholder">Pronto para começar a gravação</div>
-              </div>
-              <div class="recording-timer" id="recording-time">00:00</div>
-              <div class="recording-controls">
-                <button id="start-recording" class="btn-record">
-                  <i class="material-icons-round">mic</i>
-                </button>
-                <button id="stop-recording" class="btn-stop" disabled>
-                  <i class="material-icons-round">stop</i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">text_fields</i>
-              <span>Texto Transcrito</span>
-            </h2>
-          </div>
-          <div class="card-body">
-            <div class="output-section">
-              <div class="transcription-box editable" id="transcription-text" contenteditable="true" placeholder="A transcrição aparecerá aqui..."></div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">psychology</i>
-              <span>Processamento com IA</span>
-            </h2>
-          </div>
-          <div class="card-body">
-            <div class="processing-options">
-              <div class="processing-option">
-                <label class="option-card selected" for="summary-option">
-                  <input type="radio" name="processingOption" id="summary-option" value="summary" checked class="visually-hidden">
-                  <div class="option-icon">
-                    <i class="material-icons-round">summarize</i>
-                  </div>
-                  <div class="option-label">Resumo</div>
-                </label>
-              </div>
-              <div class="processing-option">
-                <label class="option-card" for="list-option">
-                  <input type="radio" name="processingOption" id="list-option" value="list" class="visually-hidden">
-                  <div class="option-icon">
-                    <i class="material-icons-round">format_list_bulleted</i>
-                  </div>
-                  <div class="option-label">Lista de Tópicos</div>
-                </label>
-              </div>
-              <div class="processing-option">
-                <label class="option-card" for="mindmap-option">
-                  <input type="radio" name="processingOption" id="mindmap-option" value="mindmap" class="visually-hidden">
-                  <div class="option-icon">
-                    <i class="material-icons-round">account_tree</i>
-                  </div>
-                  <div class="option-label">Mapa Mental</div>
-                </label>
-              </div>
-            </div>
-            
-            <div class="d-flex justify-end mb-md">
-              <button id="process-text" class="btn btn-primary btn-lg" disabled>
-                <i class="material-icons-round">smart_toy</i>
-                <span>Processar com IA</span>
-              </button>
-            </div>
-            
-            <div id="processed-output" class="processed-box" contenteditable="true" placeholder="O texto processado aparecerá aqui..."></div>
-          </div>
-          <div class="card-footer">
-            <button id="saveTranscriptionBtn" class="btn btn-success" disabled>
-              <i class="material-icons-round">save</i>
-              <span>Salvar Transcrição</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Página de Histórico -->
-      <div id="history-page" class="page-content" style="display: none;">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">history</i>
-              <span>Histórico de Transcrições</span>
-            </h2>
-          </div>
-          <div class="card-body">
-            <div class="form-group mb-lg">
-              <input type="text" id="search-transcriptions" class="form-control" placeholder="Buscar transcrições...">
-            </div>
-            
-            <div id="all-transcriptions-spinner" class="text-center mb-md" style="display: none;">
-              <div class="loader" style="margin: 0 auto;"></div>
-            </div>
-            
-            <div id="empty-state-all" class="empty-state" style="display: none;">
-              <i class="material-icons-round empty-state-icon">note_alt</i>
-              <p class="empty-state-text">Você ainda não tem transcrições. Vamos começar gravando uma!</p>
-              <a href="#record" class="btn btn-primary" data-page="record">
-                <i class="material-icons-round">mic</i>
-                <span>Nova Gravação</span>
-              </a>
-            </div>
-            
-            <ul id="all-transcriptions-list" class="history-list"></ul>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Página de Configurações -->
-      <div id="settings-page" class="page-content" style="display: none;">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">person</i>
-              <span>Perfil</span>
-            </h2>
-          </div>
-          <div class="card-body">
-            <div class="form-group">
-              <div class="form-label">Email</div>
-              <div class="form-control" style="background-color: var(--bg-color);" id="profile-email">usuario@exemplo.com</div>
-            </div>
-            
-            <div class="d-flex gap-md">
-              <button id="change-password-btn" class="btn btn-secondary">
-                <i class="material-icons-round">lock</i>
-                <span>Alterar Senha</span>
-              </button>
-              
-              <button id="delete-account-btn" class="btn btn-danger">
-                <i class="material-icons-round">delete</i>
-                <span>Excluir Conta</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Página de Chave API -->
-      <div id="api-page" class="page-content" style="display: none;">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="material-icons-round">vpn_key</i>
-              <span>Chave API da OpenAI</span>
-            </h2>
-          </div>
-          <div class="card-body">
-            <p class="mb-md">Para utilizar o recurso de transcrição e processamento, é necessário fornecer uma chave API válida da OpenAI.</p>
-            
-            <div class="form-group">
-              <label for="api-key" class="form-label">Chave API</label>
-              <input type="password" id="api-key" class="form-control" placeholder="Digite sua chave API da OpenAI (começa com sk-)" autocomplete="off">
-            </div>
-            
-            <div class="d-flex justify-end">
-              <button id="save-api-key" class="btn btn-primary">
-                <i class="material-icons-round">save</i>
-                <span>Salvar Chave API</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-  
-  <!-- Modal de Salvar Transcrição -->
-  <div id="save-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="card" style="width: 100%; max-width: 500px; margin: 0 16px;">
-      <div class="card-header">
-        <h2 class="card-title">
-          <i class="material-icons-round">save</i>
-          <span>Salvar Transcrição</span>
-        </h2>
-        <button class="btn-icon btn-secondary close-modal">
-          <i class="material-icons-round">close</i>
-        </button>
-      </div>
-      <div class="card-body">
-        <div class="form-group">
-          <label for="transcription-title" class="form-label">Título da Transcrição</label>
-          <input type="text" id="transcription-title" class="form-control" placeholder="Digite um título para esta transcrição">
-        </div>
-      </div>
-      <div class="card-footer">
-        <div class="d-flex justify-end gap-sm">
-          <button class="btn btn-secondary close-modal">Cancelar</button>
-          <button id="confirm-save-btn" class="btn btn-primary">Salvar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal de Visualização de Transcrição -->
-  <div id="view-transcription-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="card" style="width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; margin: 0 16px;">
-      <div class="card-header">
-        <h2 class="card-title" id="modal-transcription-title">Título da Transcrição</h2>
-        <button class="btn-icon btn-secondary close-modal">
-          <i class="material-icons-round">close</i>
-        </button>
-      </div>
-      <div class="card-body">
-        <p class="mb-md"><strong>Data:</strong> <span id="modal-transcription-date"></span></p>
-        
-        <h3 class="mb-sm">Texto Transcrito:</h3>
-        <div id="modal-transcription-text" class="transcription-box mb-lg"></div>
-        
-        <h3 class="mb-sm">Texto Processado:</h3>
-        <div id="modal-processed-text" class="processed-box mb-md"></div>
-        
-        <p><strong>Tipo de processamento:</strong> <span id="modal-processing-type"></span></p>
-      </div>
-      <div class="card-footer">
-        <div class="d-flex justify-end gap-sm">
-          <button id="edit-transcription-btn" class="btn btn-secondary">
-            <i class="material-icons-round">edit</i>
-            <span>Editar</span>
-          </button>
-          <button id="delete-transcription-btn" class="btn btn-danger">
-            <i class="material-icons-round">delete</i>
-            <span>Excluir</span>
-          </button>
-          <button class="btn btn-primary close-modal-btn">Fechar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts para diagnóstico -->
-  <script src="./js/diagnostico.js"></script>
-  
-  <!-- Scripts funcionais da aplicação -->
   <script src="./js/transcription.js"></script>
   <script src="./js/audio-recorder.js"></script>
-  <script src="./js/ui-handler.js"></script>
-  
-  <!-- Script principal da aplicação -->
-  <script src="./js/app.js"></script>
-  
-  <!-- Service Worker -->
-  <script src="./js/register-sw.js"></script>
-  
-  <!-- Código de emergência para forçar exibição da aplicação se necessário -->
+  <script src="./js/ui-controller.js"></script>
+  <script src="./js/app.js" defer></script>
+  <script src="./js/register-sw.js" defer></script>
+  <script src="./js/diagnostico.js" defer></script>
+</head>
+<body>
+  <div id="splash" class="splash">
+    <h1>MapzyVox IA</h1>
+    <p id="status-text">Carregando aplicação...</p>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="header">
+      <h1>MapzyVox IA</h1>
+      <button id="logout-button" class="btn btn-secondary">Sair</button>
+    </header>
+
+    <main class="main-content">
+      <section class="user-info">
+        <p>Olá, <span id="user-name">usuário</span>!</p>
+      </section>
+
+      <section class="recorder">
+        <h2>Nova Gravação</h2>
+        <button id="start-recording" class="btn btn-primary">Gravar</button>
+        <button id="stop-recording" class="btn btn-secondary" disabled>Parar</button>
+      </section>
+
+      <section class="transcription">
+        <h2>Transcrição</h2>
+        <textarea id="transcription-text" rows="10" placeholder="A transcrição aparecerá aqui..."></textarea>
+        <button id="process-text" class="btn btn-outline">Enviar para processamento com IA</button>
+      </section>
+
+      <section class="history">
+        <h2>Histórico de Gravações</h2>
+        <ul id="recording-history"></ul>
+      </section>
+    </main>
+  </div>
+
   <script>
-    // Código de emergência para debugging
-    setTimeout(() => {
-      console.log("Verificando se a aplicação está travada...");
-      const splash = document.getElementById('splash');
-      const app = document.getElementById('app');
-      
-      if (splash && !splash.classList.contains('hidden') && firebase.auth().currentUser) {
-        console.log("Detectado problema: splash ainda visível com usuário autenticado");
-        console.log("Tentando forçar a exibição da aplicação...");
-        
-        splash.style.display = 'none';
-        if (app) {
-          app.style.display = 'flex';
-          console.log("Aplicação forçada a ser exibida");
+    const splash = document.getElementById('splash');
+    const app = document.getElementById('app');
+    const statusText = document.getElementById('status-text');
+
+    function showApp() {
+      console.log('Mostrando aplicação...');
+      splash.classList.add('hidden');
+      app.classList.remove('hidden');
+    }
+
+    function initApp() {
+      console.log('Iniciando verificação de autenticação...');
+      firebase.auth().onAuthStateChanged((user) => {
+        console.log("Estado de autenticação:", user ? "Logado como " + (user.email || user.uid) : "Não logado");
+        if (user) {
+          console.log('Usuário autenticado, configurando interface...');
+          document.getElementById('user-name').textContent = user.displayName || user.email || "Usuário";
+          window.userId = user.uid;
+          
+          try {
+            console.log('Carregando histórico do usuário...');
+            if (typeof loadUserHistory === 'function') {
+              loadUserHistory(user.uid);
+            } else {
+              console.warn('Função loadUserHistory não encontrada');
+            }
+          } catch (error) {
+            console.error('Erro ao carregar histórico:', error);
+          }
+          
+          console.log('Mostrando a aplicação...');
+          showApp();
+        } else {
+          console.log('Usuário não autenticado, redirecionando para login...');
+          window.location.href = './login.html';
         }
-      }
-    }, 5000); // Verificar após 5 segundos
-  </script>
-  <script>
-  // Script de correção para o erro de mobileMenuToggle
-  document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se o elemento mobileMenuToggle existe antes de usar
-    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-    const sidebar = document.getElementById('sidebar');
-    
-    if (mobileMenuToggle && sidebar) {
-      mobileMenuToggle.addEventListener('click', function() {
-        sidebar.classList.toggle('show');
       });
     }
-    
-    // Forçar exibição da aplicação após 2 segundos
-    setTimeout(function() {
-      const splash = document.getElementById('splash');
-      const app = document.getElementById('app');
+
+    function loadUserHistory(userId) {
+      console.log('Carregando histórico para userId:', userId);
+      // Tentativa de usar o transcriptionUtils se disponível
+      if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
+        try {
+          window.transcriptionUtils.loadTranscriptionsList();
+        } catch (error) {
+          console.error('Erro ao carregar lista de transcrições:', error);
+        }
+      } else {
+        console.warn('transcriptionUtils não disponível para carregar histórico');
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log('DOM carregado, inicializando aplicação...');
       
-      if (splash) splash.style.display = 'none';
-      if (app) app.style.display = 'flex';
+      const timeoutFallback = new Promise(resolve => setTimeout(resolve, 1500));
+
+      Promise.race([
+        new Promise(resolve => {
+          if ('serviceWorker' in navigator) {
+            console.log('Aguardando Service Worker...');
+            navigator.serviceWorker.ready.then(resolve);
+          } else {
+            console.log('Service Worker não suportado');
+            resolve();
+          }
+        }),
+        timeoutFallback
+      ]).then(() => {
+        console.log('Iniciando app após carregamento de Service Worker ou timeout');
+        initApp();
+      });
+
+      document.getElementById("logout-button").addEventListener("click", () => {
+        console.log('Botão de logout clicado');
+        firebase.auth().signOut().then(() => {
+          window.location.href = './login.html';
+        });
+      });
+
+      document.getElementById("start-recording").addEventListener("click", () => {
+        if (typeof startRecording === 'function') {
+          startRecording();
+        } else {
+          console.error('Função startRecording não encontrada');
+        }
+      });
       
-      console.log('Aplicação forçada a ser exibida');
-    }, 2000);
-  });
-</script>
+      document.getElementById("stop-recording").addEventListener("click", () => {
+        if (typeof stopRecording === 'function') {
+          stopRecording();
+        } else {
+          console.error('Função stopRecording não encontrada');
+        }
+      });
+      
+      document.getElementById("process-text").addEventListener("click", () => {
+        const text = document.getElementById("transcription-text").value;
+        if (text.trim()) {
+          if (typeof processTranscription === 'function') {
+            processTranscription(text);
+          } else {
+            console.error('Função processTranscription não encontrada');
+          }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
