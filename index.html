@@ -10,6 +10,27 @@
   <link rel="stylesheet" href="./css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f4f4f4;
+      color: #2c3e50;
+    }
+    .splash h1 {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .splash p {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+    }
+    .hidden { display: none; }
+  </style>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -22,46 +43,78 @@
   <script src="./js/app.js" defer></script>
   <script src="./js/register-sw.js" defer></script>
 </head>
-<body class="main-page">
-  <header class="header">
+<body>
+  <div id="splash" class="splash">
     <h1>MapzyVox IA</h1>
-    <button id="logout-button" class="btn btn-secondary">Sair</button>
-  </header>
+    <p id="status-text">Carregando aplicação...</p>
+  </div>
 
-  <main class="main-content">
-    <section class="user-info">
-      <p>Olá, <span id="user-name">usuário</span>!</p>
-    </section>
+  <div id="app" class="hidden">
+    <header class="header">
+      <h1>MapzyVox IA</h1>
+      <button id="logout-button" class="btn btn-secondary">Sair</button>
+    </header>
 
-    <section class="recorder">
-      <h2>Nova Gravação</h2>
-      <button id="start-recording" class="btn btn-primary">Gravar</button>
-      <button id="stop-recording" class="btn btn-secondary" disabled>Parar</button>
-    </section>
+    <main class="main-content">
+      <section class="user-info">
+        <p>Olá, <span id="user-name">usuário</span>!</p>
+      </section>
 
-    <section class="transcription">
-      <h2>Transcrição</h2>
-      <textarea id="transcription-text" rows="10" placeholder="A transcrição aparecerá aqui..."></textarea>
-      <button id="process-text" class="btn btn-outline">Enviar para processamento com IA</button>
-    </section>
+      <section class="recorder">
+        <h2>Nova Gravação</h2>
+        <button id="start-recording" class="btn btn-primary">Gravar</button>
+        <button id="stop-recording" class="btn btn-secondary" disabled>Parar</button>
+      </section>
 
-    <section class="history">
-      <h2>Histórico de Gravações</h2>
-      <ul id="recording-history"></ul>
-    </section>
-  </main>
+      <section class="transcription">
+        <h2>Transcrição</h2>
+        <textarea id="transcription-text" rows="10" placeholder="A transcrição aparecerá aqui..."></textarea>
+        <button id="process-text" class="btn btn-outline">Enviar para processamento com IA</button>
+      </section>
+
+      <section class="history">
+        <h2>Histórico de Gravações</h2>
+        <ul id="recording-history"></ul>
+      </section>
+    </main>
+  </div>
 
   <script>
+    const splash = document.getElementById('splash');
+    const app = document.getElementById('app');
+    const statusText = document.getElementById('status-text');
+
+    function showApp() {
+      splash.classList.add('hidden');
+      app.classList.remove('hidden');
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
-      firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-          document.getElementById('user-name').textContent = user.displayName || user.email;
-          window.userId = user.uid;
-          loadUserHistory(user.uid);
-        } else {
-          window.location.href = './login.html';
-        }
-      });
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(() => {
+          firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+              document.getElementById('user-name').textContent = user.displayName || user.email;
+              window.userId = user.uid;
+              loadUserHistory(user.uid);
+              showApp();
+            } else {
+              window.location.href = './login.html';
+            }
+          });
+        });
+      } else {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+            document.getElementById('user-name').textContent = user.displayName || user.email;
+            window.userId = user.uid;
+            loadUserHistory(user.uid);
+            showApp();
+          } else {
+            window.location.href = './login.html';
+          }
+        });
+      }
 
       document.getElementById("logout-button").addEventListener("click", () => {
         firebase.auth().signOut();
