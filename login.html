@@ -97,7 +97,8 @@
       // Verificar se o usuário já está logado
 firebase.auth().onAuthStateChanged((user) => {
   const currentPage = window.location.pathname;
-  const isLoginPage = currentPage.includes('login.html') || currentPage === '/' || currentPage.endsWith('index.html');
+  const isLoginPage = currentPage.includes('login.html');
+
 
   if (user && isLoginPage) {
     if (!window._isRedirecting) {
