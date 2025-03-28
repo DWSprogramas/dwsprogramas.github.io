@@ -89,32 +89,29 @@
       app.classList.remove('hidden');
     }
 
+    function initApp() {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          document.getElementById('user-name').textContent = user.displayName || user.email;
+          window.userId = user.uid;
+          loadUserHistory(user.uid);
+          showApp();
+        } else {
+          window.location.href = './login.html';
+        }
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(() => {
-          firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-              document.getElementById('user-name').textContent = user.displayName || user.email;
-              window.userId = user.uid;
-              loadUserHistory(user.uid);
-              showApp();
-            } else {
-              window.location.href = './login.html';
-            }
-          });
-        });
-      } else {
-        firebase.auth().onAuthStateChanged((user) => {
-          if (user) {
-            document.getElementById('user-name').textContent = user.displayName || user.email;
-            window.userId = user.uid;
-            loadUserHistory(user.uid);
-            showApp();
-          } else {
-            window.location.href = './login.html';
-          }
-        });
-      }
+      const swReady = ('serviceWorker' in navigator)
+        ? navigator.serviceWorker.ready
+        : Promise.resolve();
+
+      const timeoutFallback = new Promise(resolve => setTimeout(resolve, 1500));
+
+      Promise.race([swReady, timeoutFallback]).then(() => {
+        initApp();
+      });
 
       document.getElementById("logout-button").addEventListener("click", () => {
         firebase.auth().signOut();
