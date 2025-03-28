@@ -21,9 +21,27 @@ function checkAuthState(callback) {
       console.log("Redirecionando para a página de login...");
       setTimeout(() => {
         window.location.href = './login.html';
-      }, 100); // pequeno delay
+      }, 100);
       return;
     }
+
+    // ✅ Usuário autenticado e ainda está na tela de login
+    if (user && isLoginPage) {
+      window._isRedirecting = true;
+      console.log("Usuário autenticado. Redirecionando para index...");
+      setTimeout(() => {
+        window.location.href = './index.html';
+      }, 100);
+      return;
+    }
+
+    // 🧠 ⚠️ Aqui estava faltando a chamada
+    if (callback && typeof callback === 'function') {
+      callback(user); // garante que a lógica continue após a verificação
+    }
+  });
+}
+
 
     // ✅ Usuário autenticado e ainda na tela de login
     if (user && isLoginPage) {
