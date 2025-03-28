@@ -476,5 +476,30 @@
       }
     }, 5000); // Verificar após 5 segundos
   </script>
+  <script>
+  // Script de correção para o erro de mobileMenuToggle
+  document.addEventListener('DOMContentLoaded', function() {
+    // Verificar se o elemento mobileMenuToggle existe antes de usar
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    
+    if (mobileMenuToggle && sidebar) {
+      mobileMenuToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('show');
+      });
+    }
+    
+    // Forçar exibição da aplicação após 2 segundos
+    setTimeout(function() {
+      const splash = document.getElementById('splash');
+      const app = document.getElementById('app');
+      
+      if (splash) splash.style.display = 'none';
+      if (app) app.style.display = 'flex';
+      
+      console.log('Aplicação forçada a ser exibida');
+    }, 2000);
+  });
+</script>
 </body>
 </html>
