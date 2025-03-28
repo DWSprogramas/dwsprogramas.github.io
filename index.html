@@ -1,59 +1,80 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#000000" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="css/styles.css" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-  <title>MapzyVox IA</title>
-</head>
-<body>
-  <div class="loading-screen" id="loading-screen">
-    <h1>MapzyVox IA</h1>
-    <p>Carregando aplicação...</p>
-    <p id="error-message" style="color: red;"></p>
-  </div>
-
-  <div id="app" style="display: none;">
-    <h2>Página Inicial</h2>
-    <p>Bem-vindo ao app MapzyVox IA.</p>
-    <!-- Os botões de gravação serão inseridos dinamicamente -->
-  </div>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapzy Vox IA - Página Inicial</title>
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta name="theme-color" content="#3498db">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="js/firebase-config.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/user-auth.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/user-auth.js"></script>
+  <script src="./js/storage-manager.js"></script>
+  <script src="./js/transcription.js"></script>
+  <script src="./js/audio-recorder.js"></script>
+  <script src="./js/ui-controller.js"></script>
+  <script src="./js/app.js" defer></script>
+  <script src="./js/register-sw.js" defer></script>
+</head>
+<body class="main-page">
+  <header class="header">
+    <h1>MapzyVox IA</h1>
+    <button id="logout-button" class="btn btn-secondary">Sair</button>
+  </header>
+
+  <main class="main-content">
+    <section class="user-info">
+      <p>Olá, <span id="user-name">usuário</span>!</p>
+    </section>
+
+    <section class="recorder">
+      <h2>Nova Gravação</h2>
+      <button id="start-recording" class="btn btn-primary">Gravar</button>
+      <button id="stop-recording" class="btn btn-secondary" disabled>Parar</button>
+    </section>
+
+    <section class="transcription">
+      <h2>Transcrição</h2>
+      <textarea id="transcription-text" rows="10" placeholder="A transcrição aparecerá aqui..."></textarea>
+      <button id="process-text" class="btn btn-outline">Enviar para processamento com IA</button>
+    </section>
+
+    <section class="history">
+      <h2>Histórico de Gravações</h2>
+      <ul id="recording-history"></ul>
+    </section>
+  </main>
+
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      checkAuthState((user) => {
-        if (!user) return; // redirecionamento já tratado em user-auth.js
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const action = urlParams.get('action');
-
-        if (action === 'record') {
-          document.getElementById('loading-screen').style.display = 'none';
-          document.getElementById('app').style.display = 'block';
-
-          const appDiv = document.getElementById('app');
-          const btn = document.createElement('button');
-          btn.textContent = 'Iniciar Gravação';
-          btn.onclick = () => alert('Gravando...');
-          appDiv.appendChild(btn);
+    document.addEventListener("DOMContentLoaded", () => {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          document.getElementById('user-name').textContent = user.displayName || user.email;
+          window.userId = user.uid;
+          loadUserHistory(user.uid);
+        } else {
+          window.location.href = './login.html';
         }
       });
 
-      setTimeout(() => {
-        const appVisible = document.getElementById('app').style.display === 'block';
-        if (!appVisible) {
-          document.getElementById('error-message').textContent = 'Tempo limite excedido. Verifique conexão ou autenticação.';
+      document.getElementById("logout-button").addEventListener("click", () => {
+        firebase.auth().signOut();
+      });
+
+      document.getElementById("start-recording").addEventListener("click", startRecording);
+      document.getElementById("stop-recording").addEventListener("click", stopRecording);
+      document.getElementById("process-text").addEventListener("click", () => {
+        const text = document.getElementById("transcription-text").value;
+        if (text.trim()) {
+          processTranscription(text);
         }
-      }, 6000);
+      });
     });
   </script>
 </body>
