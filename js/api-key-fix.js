@@ -1,48 +1,47 @@
 /**
- * Correção definitiva para o problema da chave API
+ * Correção para o problema da chave API
  */
 (function() {
-  // Executar após o DOM estar pronto
+  // Executar quando o documento estiver pronto
   document.addEventListener('DOMContentLoaded', function() {
     console.log("=== Correção da API Key iniciada ===");
     
-    // 1. Verificar se os elementos necessários existem
+    // Encontrar os elementos necessários
     const apiKeyInput = document.getElementById('apiKey');
     const saveButton = document.getElementById('saveApiKey');
     const startRecordingButton = document.getElementById('startRecording');
     
     if (!apiKeyInput || !saveButton) {
-      console.error("Elementos necessários não encontrados!");
+      console.error("Elementos da API Key não encontrados!");
       return;
     }
     
-    // 2. Se já existir uma chave API salva, carregá-la e habilitar o botão de gravação
+    console.log("Elementos encontrados, aplicando correção...");
+    
+    // Verificar se já existe uma chave salva
     const savedKey = localStorage.getItem('openai_api_key');
     if (savedKey && savedKey.startsWith('sk-')) {
-      console.log("Chave API encontrada no localStorage");
+      console.log("Chave API já existe no localStorage");
       apiKeyInput.value = savedKey;
       
       if (startRecordingButton) {
         startRecordingButton.disabled = false;
-        console.log("Botão de gravação habilitado baseado na chave API existente");
+        console.log("Botão de gravação habilitado");
       }
     }
     
-    // 3. Substituir completamente o comportamento do botão de salvar
-    saveButton.onclick = null;
-    saveButton.removeEventListener('click', handleSaveApiKey);
-    
-    // Criar um novo botão para substituir o existente
+    // Substituir o botão para remover manipuladores antigos
     const newButton = saveButton.cloneNode(true);
     saveButton.parentNode.replaceChild(newButton, saveButton);
     
-    // 4. Adicionar o comportamento correto para salvar a chave API
+    // Adicionar o comportamento correto
     newButton.addEventListener('click', function() {
-      console.log("Botão salvar chave API clicado");
+      console.log("Botão salvar API clicado");
       
-      // Obter e validar a chave
+      // Obter a chave
       const apiKey = apiKeyInput.value.trim();
       
+      // Validar a chave
       if (!apiKey) {
         showErrorMessage("Por favor, insira uma chave API válida");
         return;
@@ -57,22 +56,23 @@
       newButton.textContent = "Salvando...";
       newButton.disabled = true;
       
-      // Salvar diretamente no localStorage
+      // Salvar no localStorage
       localStorage.setItem('openai_api_key', apiKey);
+      console.log("Chave API salva no localStorage");
       
-      // Tentar também salvar no Firebase se disponível
+      // Tentar salvar no Firebase
       if (window.firebaseHelper && typeof window.firebaseHelper.saveUserApiKey === 'function') {
         window.firebaseHelper.saveUserApiKey(apiKey)
           .then(() => {
-            showSuccessMessage("Chave API salva com sucesso!");
             console.log("Chave API salva no Firebase");
+            showSuccessMessage("Chave API salva com sucesso!");
           })
           .catch(error => {
             console.error("Erro ao salvar no Firebase:", error);
-            showSuccessMessage("Chave API salva localmente com sucesso!");
+            showSuccessMessage("Chave API salva localmente.");
           })
           .finally(() => {
-            // Restaurar botão
+            // Restaurar o botão
             newButton.textContent = "Salvar Chave API";
             newButton.disabled = false;
             
@@ -82,7 +82,7 @@
             }
           });
       } else {
-        // Se não houver Firebase, apenas finalizar
+        // Sem Firebase, apenas concluir
         showSuccessMessage("Chave API salva localmente com sucesso!");
         newButton.textContent = "Salvar Chave API";
         newButton.disabled = false;
