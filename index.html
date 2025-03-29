@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -162,30 +164,6 @@
   </div>
   
   <script>
-  // Forçar logout e redirecionar para login
-  (function() {
-    // Tentar fazer logout do Firebase
-    if (window.firebase && firebase.auth) {
-      firebase.auth().signOut().then(() => {
-        console.log("Logout forçado realizado com sucesso");
-        // Limpar qualquer outro armazenamento local
-        localStorage.clear();
-        sessionStorage.clear();
-        // Redirecionar para login
-        window.location.href = 'login.html';
-      }).catch(error => {
-        console.error("Erro ao fazer logout forçado:", error);
-      });
-    } else {
-      // Se o Firebase não estiver carregado ainda, apenas redirecionar
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = 'login.html';
-    }
-  })();
-</script>
-  
-  <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Inicializar componentes da UI
       if (window.uiController && typeof window.uiController.initUI === 'function') {
@@ -239,108 +217,7 @@
         console.warn('Módulo de armazenamento não encontrado');
       }
     });
-    
- //-----------------------------------   
-    // Script de diagnóstico para debugar problema de salvar a chave API
-// Inclua este script temporariamente na página index.html após todos os outros scripts
-
-(function() {
-    console.log("==== Diagnóstico de Chave API ====");
-    
-    // Verificar se o elemento de input e botão existem
-    const apiKeyInput = document.getElementById('apiKey');
-    const saveApiKeyButton = document.getElementById('saveApiKey');
-    
-    console.log("Input da API Key encontrado:", apiKeyInput !== null);
-    console.log("Botão de salvar API encontrado:", saveApiKeyButton !== null);
-    
-    // Verificar se os módulos necessários estão disponíveis
-    console.log("window.firebaseHelper disponível:", window.firebaseHelper !== undefined);
-    console.log("window.storageUtils disponível:", window.storageUtils !== undefined);
-    
-    if (window.firebaseHelper) {
-        console.log("firebaseHelper.saveUserApiKey é uma função:", typeof window.firebaseHelper.saveUserApiKey === 'function');
-    }
-    
-    if (window.storageUtils) {
-        console.log("storageUtils.saveApiKeyLocally é uma função:", typeof window.storageUtils.saveApiKeyLocally === 'function');
-    }
-    
-    // Verificar estado da autenticação
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-        firebase.auth().onAuthStateChanged((user) => {
-            console.log("Usuário autenticado:", user ? "Sim" : "Não");
-            if (user) {
-                console.log("UID do usuário:", user.uid);
-                console.log("Email do usuário:", user.email);
-            }
-        });
-    } else {
-        console.log("Firebase Auth não disponível");
-    }
-    
-    // Verificar se já existe uma chave API salva
-    console.log("Chave API no localStorage:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
-    
-
-</script>
-<script>
-// Script de diagnóstico para debugar problema de salvar a chave API
-(function() {
-    console.log("==== Diagnóstico de Chave API ====");
-    
-    // Verificar se o elemento de input e botão existem
-    const apiKeyInput = document.getElementById('apiKey');
-    const saveApiKeyButton = document.getElementById('saveApiKey');
-    
-    console.log("Input da API Key encontrado:", apiKeyInput !== null);
-    console.log("Botão de salvar API encontrado:", saveApiKeyButton !== null);
-    
-    // Verificar se os módulos necessários estão disponíveis
-    console.log("window.firebaseHelper disponível:", window.firebaseHelper !== undefined);
-    console.log("window.storageUtils disponível:", window.storageUtils !== undefined);
-    
-    if (window.firebaseHelper) {
-        console.log("firebaseHelper.saveUserApiKey é uma função:", typeof window.firebaseHelper.saveUserApiKey === 'function');
-    }
-    
-    if (window.storageUtils) {
-        console.log("storageUtils.saveApiKeyLocally é uma função:", typeof window.storageUtils.saveApiKeyLocally === 'function');
-    }
-    
-    // Verificar estado da autenticação
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-        firebase.auth().onAuthStateChanged((user) => {
-            console.log("Usuário autenticado:", user ? "Sim" : "Não");
-            if (user) {
-                console.log("UID do usuário:", user.uid);
-                console.log("Email do usuário:", user.email);
-            }
-        });
-    } else {
-        console.log("Firebase Auth não disponível");
-    }
-    
-    // Verificar se já existe uma chave API salva
-    console.log("Chave API no localStorage:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
-    
-    // Adicionar diagnóstico ao evento de clique
-    if (saveApiKeyButton) {
-        saveApiKeyButton.addEventListener('click', function(e) {
-            console.log("==== Evento de clique detectado ====");
-            console.log("Valor do input:", apiKeyInput ? (apiKeyInput.value ? "Preenchido" : "Vazio") : "Input não encontrado");
-            
-            // Se o evento original não for processado, isso será registrado
-            setTimeout(() => {
-                console.log("==== Verificação pós-clique ====");
-                console.log("Chave API no localStorage após clique:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
-            }, 1000);
-        });
-    }
-    
-    console.log("==== Fim do diagnóstico ====");
-})();
-</script>
-<script src="js/api-key-fix.js"></script>
+  </script>
+  <script src="js/api-key-fix.js"></script>
 </body>
 </html>
