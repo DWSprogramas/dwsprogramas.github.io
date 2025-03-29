@@ -3,164 +3,283 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapzy Vox IA - Assistente Inteligente de Transcrição</title>
-  <meta name="theme-color" content="#4361ee">
-  <link rel="manifest" href="./manifest.json">
+  <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
   
-  <!-- Estilos -->
-  <link rel="stylesheet" href="./css/styles.css">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Firebase -->
+  <!-- Meta tags de segurança -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="theme-color" content="#3498db">
+  
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Biblioteca Material Icons da Google para ícones -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Alpine.js para interações simples -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Scripts Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  
-  <!-- Scripts Locais -->
-  <script src="./js/firebase-config.js" defer></script>
-  <script src="./js/app.js" defer></script>
+  <!-- Scripts da aplicação na ordem correta de dependência -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/storage-manager.js"></script>
+  <script src="js/user-auth.js"></script>
+  <script src="js/audio-recorder.js"></script>
+  <script src="js/transcription.js"></script>
+  <script src="js/ui-controller.js"></script>
+  <script src="js/app.js" defer></script>
+  <script src="js/register-sw.js" defer></script>
+  <script src="js/diagnostico.js" defer></script>
+
+  <style>
+    .splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f4f4f4;
+      color: #2c3e50;
+    }
+    .splash h1 {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .splash p {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+    }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-  <!-- Tela de Carregamento -->
-  <div class="splash-screen">
-    <div class="spinner"></div>
-    <h1>Mapzy Vox IA</h1>
-    <p>Inicializando ambiente seguro...</p>
+  <div id="splash" class="splash">
+    <h1>MapzyVox IA</h1>
+    <p id="status-text">Carregando aplicação...</p>
   </div>
 
-  <!-- Aplicação Principal -->
-  <div id="app" class="hidden">
-    <!-- Sidebar -->
-    <aside class="app-sidebar">
-      <div class="user-panel">
-        <img src="" alt="Foto do usuário" class="user-avatar" id="user-photo">
-        <div class="user-info">
-          <h2 class="user-name" id="user-name">Usuário</h2>
-          <p class="user-email" id="user-email">usuario@email.com</p>
+  <div id="app" class="hidden container">
+    <div class="app-header">
+      <h1 class="app-title">Mapzy Vox IA</h1>
+      <p class="app-subtitle">Transcritor e Processador de Voz por IA</p>
+    </div>
+    
+    <div class="nav-bar">
+      <div class="user-info">
+        <div class="user-avatar-container">
+          <img src="" alt="Avatar" class="user-avatar" style="display: none;">
+          <div class="user-initials" style="display: none;">U</div>
+        </div>
+        <div class="user-details">
+          <span class="user-name" id="userName">Usuário</span>
+          <span class="user-email" id="userEmail">email@exemplo.com</span>
         </div>
       </div>
-
-      <nav class="main-nav">
-        <ul class="nav-list">
-          <li>
-            <a href="#dashboard" class="nav-link active">
-              <i class="material-icons-round">dashboard</i>
-              Dashboard
-            </a>
-          </li>
-          <li>
-            <a href="#recorder" class="nav-link">
-              <i class="material-icons-round">mic</i>
-              Nova Gravação
-            </a>
-          </li>
-          <li>
-            <a href="#history" class="nav-link">
-              <i class="material-icons-round">history</i>
-              Histórico
-            </a>
-          </li>
-        </ul>
-      </nav>
-
-      <footer class="sidebar-footer">
-        <button id="logout-btn" class="btn-logout">
-          <i class="material-icons-round">logout</i>
-          Sair
-        </button>
-        <div class="app-version">v2.0.0</div>
-      </footer>
-    </aside>
-
-    <!-- Conteúdo Principal -->
-    <main class="main-content">
-      <!-- Header -->
-      <header class="content-header">
-        <h1 id="page-title">Dashboard</h1>
-        <button class="btn-new-recording">
-          <i class="material-icons-round">mic</i>
-          Nova Gravação
-        </button>
-      </header>
-
-      <!-- Seção de Gravação -->
-      <section class="recording-section">
-        <div class="recording-card">
-          <div class="waveform-container" id="waveform"></div>
-          
-          <div class="recording-controls">
-            <button id="start-recording" class="btn-record">
-              <i class="material-icons-round">fiber_manual_record</i>
-            </button>
-            <div class="recording-timer">00:00</div>
-            <button id="stop-recording" class="btn-stop" disabled>
-              <i class="material-icons-round">stop</i>
-            </button>
-          </div>
+      <button class="logout-button" id="logout-button">
+        <span class="material-icons">logout</span> Sair
+      </button>
+    </div>
+    
+    <div class="tabs">
+      <div class="tab active" data-tab="recorder">Gravador</div>
+      <div class="tab" data-tab="history">Histórico</div>
+      <div class="tab" data-tab="settings">Configurações</div>
+    </div>
+    
+    <!-- Conteúdo da aba do gravador -->
+    <div id="recorderTab" class="tab-content active">
+      <div class="api-key-container">
+        <h3>Configurar API OpenAI</h3>
+        <p>Digite sua chave API da OpenAI para ativar a transcrição e processamento de áudio.</p>
+        <input type="password" id="apiKey" placeholder="Chave API (começa com sk-...)">
+        <button id="saveApiKey">Salvar Chave API</button>
+      </div>
+      
+      <div id="status">Pronto para gravar. Clique em "Iniciar Gravação".</div>
+      <div id="error"></div>
+      
+      <div class="recorder-controls">
+        <button id="startRecording">Iniciar Gravação</button>
+        <button id="stopRecording" disabled>Parar Gravação (<span id="recordingTime">00:00</span>)</button>
+      </div>
+      
+      <h3>Texto Transcrito <span class="editable-indicator">(Editável)</span></h3>
+      <div id="transcription" class="editable" contenteditable="true"></div>
+      
+      <div class="processing-options">
+        <h3>Opções de Processamento</h3>
+        <div>
+          <input type="radio" name="processingOption" id="optionSummary" value="summary" checked>
+          <label for="optionSummary">Resumo Conciso</label>
         </div>
-      </section>
-
-      <!-- Editor de Transcrição -->
-      <section class="editor-section">
-        <div class="editor-container">
-          <div class="editor-header">
-            <h2>Transcrição em Tempo Real</h2>
-            <div class="language-selector">
-              <i class="material-icons-round">translate</i>
-              <select id="language-select">
-                <option value="pt-BR">Português (BR)</option>
-                <option value="en-US">Inglês (EUA)</option>
-                <option value="es-ES">Espanhol (ES)</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="transcription-editor" 
-               contenteditable="true" 
-               data-placeholder="Fale ou cole seu texto aqui...">
-          </div>
+        <div>
+          <input type="radio" name="processingOption" id="optionList" value="list">
+          <label for="optionList">Lista de Tópicos</label>
         </div>
-      </section>
-
-      <!-- Processamento por IA -->
-      <section class="ai-processing-section">
-        <div class="ai-actions">
-          <button class="btn-ai-process" id="process-text">
-            <i class="material-icons-round">auto_awesome</i>
-            Processar com IA
-          </button>
-          
-          <div class="ai-options">
-            <button class="ai-option" data-action="summarize">
-              <i class="material-icons-round">summarize</i>
-              Resumir
-            </button>
-            <button class="ai-option" data-action="translate">
-              <i class="material-icons-round">translate</i>
-              Traduzir
-            </button>
-            <button class="ai-option" data-action="improve">
-              <i class="material-icons-round">auto_fix_high</i>
-              Melhorar Texto
-            </button>
-          </div>
+        <div>
+          <input type="radio" name="processingOption" id="optionMindmap" value="mindmap">
+          <label for="optionMindmap">Mapa Mental</label>
         </div>
-
-        <div class="ai-output" 
-             contenteditable="true"
-             data-placeholder="Resultado do processamento aparecerá aqui...">
+      </div>
+      
+      <button id="processText" disabled>Processar Texto</button>
+      
+      <h3>Texto Processado</h3>
+      <div id="processedOutput"></div>
+      
+      <button id="saveTranscriptionBtn" disabled>Salvar Transcrição</button>
+    </div>
+    
+    <!-- Conteúdo da aba de histórico -->
+    <div id="historyTab" class="tab-content">
+      <h2>Histórico de Transcrições</h2>
+      <div id="noTranscriptions" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">📝</div>
+        <p>Você ainda não tem transcrições salvas.</p>
+        <p>Comece gravando e processando seu áudio!</p>
+      </div>
+      <ul id="transcriptionList" class="transcription-list">
+        <!-- Preenchido via JavaScript -->
+      </ul>
+    </div>
+    
+    <!-- Conteúdo da aba de configurações -->
+    <div id="settingsTab" class="tab-content">
+      <h2>Configurações</h2>
+      
+      <div class="card">
+        <h3 class="card-title">API OpenAI</h3>
+        <p>Configure sua chave API para usar o serviço de transcrição e processamento da OpenAI.</p>
+        <div class="form-group">
+          <label for="apiKeySetting">Chave API:</label>
+          <input type="password" id="apiKeySetting" placeholder="Chave API da OpenAI (começa com sk-...)">
+          <button id="saveApiKeySetting">Salvar</button>
         </div>
-      </section>
-    </main>
+        <p class="hint">A chave API é armazenada com segurança em seu navegador e no Firebase.</p>
+      </div>
+      
+      <div class="card">
+        <h3 class="card-title">Sua Conta</h3>
+        <p><strong>Email:</strong> <span id="userEmailSetting"></span></p>
+        <button id="changePasswordBtn">Alterar Senha</button>
+        <button id="deleteAccountBtn" style="background-color: #e74c3c;">Excluir Conta</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Notificações -->
-  <div class="notification-center"></div>
+  <script>
+    const splash = document.getElementById('splash');
+    const app = document.getElementById('app');
+    const statusText = document.getElementById('status-text');
 
-  <!-- Scripts -->
-  <script src="./js/audio-recorder.js" defer></script>
-  <script src="./js/transcription-manager.js" defer></script>
-  <script src="./js/ui-manager.js" defer></script>
+    function showApp() {
+      console.log('Mostrando aplicação...');
+      splash.classList.add('hidden');
+      app.classList.remove('hidden');
+    }
+
+    function initApp() {
+      console.log('Iniciando verificação de autenticação...');
+      firebase.auth().onAuthStateChanged((user) => {
+        console.log("Estado de autenticação:", user ? "Logado como " + (user.email || user.uid) : "Não logado");
+        if (user) {
+          console.log('Usuário autenticado, configurando interface...');
+          document.getElementById('userName').textContent = user.displayName || user.email || "Usuário";
+          document.getElementById('userEmail').textContent = user.email || "email@exemplo.com";
+          window.userId = user.uid;
+          
+          try {
+            console.log('Carregando histórico do usuário...');
+            if (typeof loadUserHistory === 'function') {
+              loadUserHistory(user.uid);
+            } else {
+              console.warn('Função loadUserHistory não encontrada');
+            }
+          } catch (error) {
+            console.error('Erro ao carregar histórico:', error);
+          }
+          
+          console.log('Mostrando a aplicação...');
+          showApp();
+        } else {
+          console.log('Usuário não autenticado, redirecionando para login...');
+          window.location.href = './login.html';
+        }
+      });
+    }
+
+    function loadUserHistory(userId) {
+      console.log('Carregando histórico para userId:', userId);
+      if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
+        try {
+          window.transcriptionUtils.loadTranscriptionsList();
+        } catch (error) {
+          console.error('Erro ao carregar lista de transcrições:', error);
+        }
+      } else {
+        console.warn('transcriptionUtils não disponível para carregar histórico');
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log('DOM carregado, inicializando aplicação...');
+      
+      const timeoutFallback = new Promise(resolve => setTimeout(resolve, 1500));
+
+      Promise.race([
+        new Promise(resolve => {
+          if ('serviceWorker' in navigator) {
+            console.log('Aguardando Service Worker...');
+            navigator.serviceWorker.ready.then(resolve);
+          } else {
+            console.log('Service Worker não suportado');
+            resolve();
+          }
+        }),
+        timeoutFallback
+      ]).then(() => {
+        console.log('Iniciando app após carregamento de Service Worker ou timeout');
+        initApp();
+      });
+
+      document.getElementById("logout-button").addEventListener("click", () => {
+        console.log('Botão de logout clicado');
+        firebase.auth().signOut().then(() => {
+          window.location.href = './login.html';
+        });
+      });
+
+      // Event listeners para controles de gravação
+      document.getElementById("startRecording").addEventListener("click", () => {
+        if (typeof startRecording === 'function') {
+          startRecording();
+        } else {
+          console.error('Função startRecording não encontrada');
+        }
+      });
+      
+      document.getElementById("stopRecording").addEventListener("click", () => {
+        if (typeof stopRecording === 'function') {
+          stopRecording();
+        } else {
+          console.error('Função stopRecording não encontrada');
+        }
+      });
+      
+      document.getElementById("processText").addEventListener("click", () => {
+        const text = document.getElementById("transcription").innerText;
+        if (text.trim()) {
+          if (typeof processTranscription === 'function') {
+            processTranscription(text);
+          } else {
+            console.error('Função processTranscription não encontrada');
+          }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
