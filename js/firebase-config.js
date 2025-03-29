@@ -579,6 +579,62 @@ function loadUserApiKey() {
   });
 }
 
+/**
+ * Função para obter e exibir informações do usuário
+ * @returns {Object|null} Objeto com informações do usuário ou null
+ */
+function getCurrentUser() {
+  const user = firebaseApp.auth.currentUser;
+  
+  if (!user) {
+    console.log('Nenhum usuário logado');
+    return null;
+  }
+  
+  return {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || 'Usuário sem nome'
+  };
+}
+
+// Adicionar ao window.firebaseHelper para acesso global
+window.firebaseHelper.getCurrentUser = getCurrentUser;
+
+// Função auxiliar para renderizar informações do usuário no HTML
+function renderUserInfo() {
+  const userInfo = getCurrentUser();
+  const userDisplayElement = document.getElementById('user-display');
+  
+  if (!userDisplayElement) {
+    console.warn('Elemento #user-display não encontrado');
+    return;
+  }
+  
+  if (!userInfo) {
+    userDisplayElement.innerHTML = `
+      <div class="user-not-logged">
+        <p>Nenhum usuário logado</p>
+        <button onclick="window.location.href='/login'">Fazer Login</button>
+      </div>
+    `;
+    return;
+  }
+  
+  userDisplayElement.innerHTML = `
+    <div class="user-logged">
+      <p>Email: ${userInfo.email}</p>
+      <p>Nome: ${userInfo.displayName}</p>
+      <button onclick="firebase.auth().signOut()">Sair</button>
+    </div>
+  `;
+}
+
+
+
+// Adicionar observer para mudanças no estado de autenticação
+firebaseApp.auth.onAuthStateChanged(renderUserInfo);
+
 // Exportar funções para uso em outros scripts
 window.firebaseHelper = {
   auth: firebaseApp.auth,
