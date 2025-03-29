@@ -94,89 +94,100 @@
   
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Prevenir verificações de autenticação duplicadas
+      if (window.authCheckStarted) return;
+      window.authCheckStarted = true;
+      
       // Verificar se o usuário já está logado
       firebase.auth().onAuthStateChanged((user) => {
         if (user) {
           // Usuário já está logado, redirecionar para a página principal
+          console.log("Login detectado, redirecionando para index.html");
           window.location.href = './index.html';
+        } else {
+          console.log("Usuário não autenticado, permanecendo na página de login");
+          // Ativar botões de login apenas quando confirmamos que o usuário não está logado
+          setupLoginButtons();
         }
       });
       
-      // Configuração dos botões de login
-      document.getElementById('login-button').addEventListener('click', () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+      function setupLoginButtons() {
+        // Configuração dos botões de login
+        document.getElementById('login-button').addEventListener('click', () => {
+          const email = document.getElementById('email').value;
+          const password = document.getElementById('password').value;
+          
+          // Verificar se os campos foram preenchidos
+          if (!email || !password) {
+            window.authUtils.showError('Por favor, preencha todos os campos');
+            return;
+          }
+          
+          // Fazer login
+          window.authUtils.loginWithEmail(email, password);
+        });
         
-        // Verificar se os campos foram preenchidos
-        if (!email || !password) {
-          window.authUtils.showError('Por favor, preencha todos os campos');
-          return;
-        }
+        document.getElementById('google-login').addEventListener('click', () => {
+          window.authUtils.loginWithGoogle();
+        });
         
-        // Fazer login
-        window.authUtils.loginWithEmail(email, password);
-      });
-      
-      document.getElementById('google-login').addEventListener('click', () => {
-        window.authUtils.loginWithGoogle();
-      });
-      
-      // Configuração do botão de registro
-      document.getElementById('register-button').addEventListener('click', () => {
-        const name = document.getElementById('reg-name').value;
-        const email = document.getElementById('reg-email').value;
-        const password = document.getElementById('reg-password').value;
-        const confirmPassword = document.getElementById('reg-password-confirm').value;
+        // Configuração do botão de registro
+        document.getElementById('register-button').addEventListener('click', () => {
+          const name = document.getElementById('reg-name').value;
+          const email = document.getElementById('reg-email').value;
+          const password = document.getElementById('reg-password').value;
+          const confirmPassword = document.getElementById('reg-password-confirm').value;
+          
+          // Verificar se os campos foram preenchidos
+          if (!name || !email || !password || !confirmPassword) {
+            window.authUtils.showError('Por favor, preencha todos os campos');
+            return;
+          }
+          
+          // Verificar se as senhas conferem
+          if (password !== confirmPassword) {
+            window.authUtils.showError('As senhas não conferem');
+            return;
+          }
+          
+          // Fazer registro
+          window.authUtils.registerUser(email, password, name);
+        });
         
-        // Verificar se os campos foram preenchidos
-        if (!name || !email || !password || !confirmPassword) {
-          window.authUtils.showError('Por favor, preencha todos os campos');
-          return;
-        }
+        // Esqueceu a senha
+        document.getElementById('forgot-password').addEventListener('click', (e) => {
+          e.preventDefault();
+          
+          const email = document.getElementById('email').value;
+          if (!email) {
+            window.authUtils.showError('Por favor, digite seu e-mail');
+            return;
+          }
+          
+          firebase.auth().sendPasswordResetEmail(email)
+            .then(() => {
+              alert('Um email de redefinição de senha foi enviado para ' + email);
+            })
+            .catch((error) => {
+              console.error('Erro ao enviar email de redefinição:', error);
+              window.authUtils.showError('Erro ao enviar email de redefinição: ' + error.message);
+            });
+        });
         
-        // Verificar se as senhas conferem
-        if (password !== confirmPassword) {
-          window.authUtils.showError('As senhas não conferem');
-          return;
-        }
+        // Permitir login pressionando Enter no campo de senha
+        document.getElementById('password').addEventListener('keyup', (event) => {
+          if (event.key === 'Enter') {
+            document.getElementById('login-button').click();
+          }
+        });
         
-        // Fazer registro
-        window.authUtils.registerUser(email, password, name);
-      });
-      
-      // Esqueceu a senha
-      document.getElementById('forgot-password').addEventListener('click', (e) => {
-        e.preventDefault();
-        
-        const email = document.getElementById('email').value;
-        if (!email) {
-          window.authUtils.showError('Por favor, digite seu e-mail');
-          return;
-        }
-        
-        firebase.auth().sendPasswordResetEmail(email)
-          .then(() => {
-            alert('Um email de redefinição de senha foi enviado para ' + email);
-          })
-          .catch((error) => {
-            console.error('Erro ao enviar email de redefinição:', error);
-            window.authUtils.showError('Erro ao enviar email de redefinição: ' + error.message);
-          });
-      });
-      
-      // Permitir login pressionando Enter no campo de senha
-      document.getElementById('password').addEventListener('keyup', (event) => {
-        if (event.key === 'Enter') {
-          document.getElementById('login-button').click();
-        }
-      });
-      
-      // Permitir registro pressionando Enter no campo de confirmação de senha
-      document.getElementById('reg-password-confirm').addEventListener('keyup', (event) => {
-        if (event.key === 'Enter') {
-          document.getElementById('register-button').click();
-        }
-      });
+        // Permitir registro pressionando Enter no campo de confirmação de senha
+        document.getElementById('reg-password-confirm').addEventListener('keyup', (event) => {
+          if (event.key === 'Enter') {
+            document.getElementById('register-button').click();
+          }
+        });
+      }
     });
   </script>
 </body>

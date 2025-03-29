@@ -35,15 +35,56 @@
   </div>
 
   <script src="/js/register-sw.js"></script>
-  <script>
+<script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(() => {
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 500);
+        // Verificar autenticação antes de redirecionar
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+              // Se não tiver usuário logado, redirecionar para login
+              window.location.href = "login.html";
+            } else {
+              // Se já estiver logado e na página inicial, podemos inicializar a aplicação
+              if (typeof window.app !== 'undefined' && typeof window.app.initApp === 'function') {
+                window.app.initApp();
+              }
+            }
+          });
+        } else {
+          // Se Firebase não estiver disponível, dar um tempo para carregar
+          setTimeout(() => {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+              const user = firebase.auth().currentUser;
+              if (!user) {
+                window.location.href = "login.html";
+              }
+            } else {
+              console.error("Firebase não disponível após espera");
+              // Talvez redirecionar para uma página de erro
+            }
+          }, 2000);
+        }
       });
     } else {
-      window.location.href = "login.html";
+      console.warn('Service Worker não suportado. Algumas funcionalidades podem não estar disponíveis.');
+      // Verificar autenticação diretamente
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (!user) {
+            window.location.href = "login.html";
+          }
+        });
+      } else {
+        setTimeout(() => {
+          if (typeof firebase !== 'undefined' && firebase.auth) {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+              window.location.href = "login.html";
+            }
+          }
+        }, 2000);
+      }
     }
   </script>
 </body>
