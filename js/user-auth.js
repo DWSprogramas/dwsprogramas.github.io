@@ -275,6 +275,45 @@ function showError(message) {
   }, 4000);
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+  // Checar a autenticação com modificações
+  if (window.authUtils && typeof window.authUtils.checkAuthState === 'function') {
+    window.authUtils.checkAuthState(function(user) {
+      const loginButton = document.getElementById('loginButton');
+      const logoutButton = document.getElementById('logoutButton');
+      const userNameElement = document.getElementById('userName');
+      const userEmailElement = document.getElementById('userEmail');
+      
+      if (user) {
+        console.log('Usuário autenticado:', user.email);
+        
+        // Usar updateUserInfo para preencher detalhes
+        window.authUtils.updateUserInfo(user);
+        
+        // Atualizar informações do usuário
+        userNameElement.textContent = user.displayName || 'Usuário';
+        userEmailElement.textContent = user.email;
+        
+        // Mostrar botão de logout, ocultar botão de login
+        loginButton.style.display = 'none';
+        logoutButton.style.display = 'flex';
+      } else {
+        console.log('Usuário não autenticado');
+        
+        // Mostrar botão de login, ocultar botão de logout
+        loginButton.style.display = 'flex';
+        logoutButton.style.display = 'none';
+        
+        // Redefinir textos de usuário
+        userNameElement.textContent = 'Fazer Login';
+        userEmailElement.textContent = 'Clique para acessar';
+      }
+    });
+  } else {
+    console.warn('Módulo de autenticação não encontrado');
+  }
+});
+
 // Adicionar estas funções ao objeto de exportação
 window.authUtils = {
   checkAuthState,
