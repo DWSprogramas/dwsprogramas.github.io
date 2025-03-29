@@ -338,8 +338,77 @@
         });
       });
     })();
+  
+    
+    
   </script>
   <script src="js/api-key-fix.js"></script>
 <script src="js/fix-history.js"></script>
+</script>
+ //------------------------
+   // Função de depuração avançada para informações do usuário
+function advancedUserInfoDebug() {
+  console.log('=== Início da Depuração de Usuário ===');
+  
+  // Verificação via diferentes métodos
+  const methods = [
+    { 
+      name: 'firebaseApp.auth.currentUser', 
+      user: window.firebaseApp?.auth?.currentUser 
+    },
+    { 
+      name: 'firebase.auth().currentUser', 
+      user: firebase.auth().currentUser 
+    }
+  ];
+
+  methods.forEach(method => {
+    console.log(`Verificando ${method.name}:`);
+    if (method.user) {
+      console.log('Usuário encontrado:', {
+        uid: method.user.uid,
+        email: method.user.email,
+        displayName: method.user.displayName,
+        providerData: method.user.providerData
+      });
+    } else {
+      console.log('Nenhum usuário encontrado');
+    }
+  });
+
+  // Tenta renderizar no elemento de exibição do usuário
+  const userDisplayElement = document.getElementById('user-display');
+  if (userDisplayElement) {
+    const currentUser = firebase.auth().currentUser;
+    if (currentUser) {
+      userDisplayElement.innerHTML = `
+        <div class="user-info-debug">
+          <h3>Informações do Usuário</h3>
+          <p><strong>Email:</strong> ${currentUser.email}</p>
+          <p><strong>UID:</strong> ${currentUser.uid}</p>
+          <p><strong>Nome:</strong> ${currentUser.displayName || 'Não definido'}</p>
+        </div>
+      `;
+      console.log('Elemento de usuário atualizado com sucesso');
+    } else {
+      userDisplayElement.innerHTML = '<p>Nenhum usuário logado</p>';
+      console.log('Nenhum usuário para renderizar');
+    }
+  } else {
+    console.warn('Elemento #user-display não encontrado no documento');
+  }
+
+  console.log('=== Fim da Depuração de Usuário ===');
+}
+
+// Adicionar listener de estado de autenticação
+firebase.auth().onAuthStateChanged((user) => {
+  console.log('Mudança de estado de autenticação detectada');
+  advancedUserInfoDebug();
+});
+
+// Chamar imediatamente para verificação inicial
+advancedUserInfoDebug(); 
+</script>
 </body>
 </html>
