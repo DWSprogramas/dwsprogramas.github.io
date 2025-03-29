@@ -1,371 +1,183 @@
-<script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
+  
+  <!-- Meta tags de segurança -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  
+  <!-- PWA elementos -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#3498db">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Mapzy Vox">
+  <link rel="apple-touch-icon" href="./ios/180.png">
+  
+  <link rel="stylesheet" href="./css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Biblioteca Material Icons da Google para ícones -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Alpine.js para interações simples -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Scripts Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- Scripts da aplicação na ordem correta de dependência -->
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/security.js"></script>
+  <script src="./js/storage-manager.js"></script>
+  <script src="./js/user-auth.js"></script>
+  <script src="./js/register-sw.js"></script>
+</head>
+<body class="login-page">
+  <div class="container" x-data="{ isLoginMode: true }">
+    <div class="auth-card">
+      <div class="app-logo">
+        <h1>Mapzy Vox IA</h1>
+        <p>Transcritor e Processador de Voz por IA</p>
+      </div>
+      
+      <div class="tabs">
+        <button class="tab-btn" :class="{ 'active': isLoginMode }" @click="isLoginMode = true">Entrar</button>
+        <button class="tab-btn" :class="{ 'active': !isLoginMode }" @click="isLoginMode = false">Cadastrar</button>
+      </div>
+      
+      <div x-show="isLoginMode" class="login-form">
+        <div class="input-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="Seu e-mail">
+        </div>
+        <div class="input-group">
+          <label for="password">Senha</label>
+          <input type="password" id="password" placeholder="Sua senha">
+        </div>
+        <button id="login-button" class="btn btn-primary">
+          <span class="material-icons">login</span> Entrar
+        </button>
+        <div class="divider">ou</div>
+        <button id="google-login" class="btn btn-outline google-btn">
+          <span class="material-icons google-icon">g_translate</span> Continuar com Google
+        </button>
+        <p class="text-center mt-2">
+          <a href="#" class="text-link" id="forgot-password">Esqueceu a senha?</a>
+        </p>
+      </div>
+      
+      <div x-show="!isLoginMode" class="register-form">
+        <div class="input-group">
+          <label for="reg-name">Nome</label>
+          <input type="text" id="reg-name" placeholder="Seu nome">
+        </div>
+        <div class="input-group">
+          <label for="reg-email">E-mail</label>
+          <input type="email" id="reg-email" placeholder="Seu e-mail">
+        </div>
+        <div class="input-group">
+          <label for="reg-password">Senha</label>
+          <input type="password" id="reg-password" placeholder="Crie uma senha">
+        </div>
+        <div class="input-group">
+          <label for="reg-password-confirm">Confirme a senha</label>
+          <input type="password" id="reg-password-confirm" placeholder="Confirme sua senha">
+        </div>
+        <button id="register-button" class="btn btn-primary">
+          <span class="material-icons">person_add</span> Cadastrar
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
     document.addEventListener('DOMContentLoaded', () => {
-      console.log("Página de login carregada");
+      // Verificar se o usuário já está logado
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          // Usuário já está logado, redirecionar para a página principal
+          window.location.href = './index.html';
+        }
+      });
       
-      // Verificar se já estamos em um fluxo de autenticação
-      if (sessionStorage.getItem('authInProgress') === 'true') {
-        console.log("Fluxo de autenticação já em andamento, verificando estado...");
+      // Configuração dos botões de login
+      document.getElementById('login-button').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
         
-        // Limpar a flag depois de um tempo para evitar loops infinitos
-        setTimeout(() => {
-          sessionStorage.removeItem('authInProgress');
-        }, 5000);
-      }
-      
-      // Verificar se estamos vindo de um redirecionamento recente
-      const lastRedirect = sessionStorage.getItem('lastRedirect');
-      const now = Date.now();
-      
-      if (lastRedirect && (now - parseInt(lastRedirect)) < 2000) {
-        console.log("Redirecionamento recente detectado, evitando loop");
-        sessionStorage.removeItem('lastRedirect');
-        setupLoginButtons(); // Apenas configurar botões, sem verificar autenticação
-        return;
-      }
-      
-      // Configurar botões de login primeiro, independente da autenticação
-      setupLoginButtons();
-      
-      // Verificar estado de autenticação
-      console.log("Verificando estado de autenticação...");
-      if (typeof firebase !== 'undefined' && firebase.auth) {
-        firebase.auth().onAuthStateChanged((user) => {
-          if (user) {
-            console.log("Usuário já autenticado:", user.email);
-            
-            // Verificar se acabamos de fazer login
-            if (sessionStorage.getItem('loginJustCompleted') === 'true') {
-              console.log("Login recém-concluído, redirecionando para app.html");
-              sessionStorage.removeItem('loginJustCompleted');
-              sessionStorage.setItem('lastRedirect', now.toString());
-              sessionStorage.setItem('authState', 'authenticated');
-              window.location.href = './app.html';
-            } else {
-              // Verificar se já redirecionamos recentemente
-              if (!sessionStorage.getItem('recentLoginRedirect')) {
-                console.log("Redirecionando para app.html");
-                sessionStorage.setItem('recentLoginRedirect', 'true');
-                sessionStorage.setItem('lastRedirect', now.toString());
-                
-                // Limpar o flag após um período para permitir redirecionamentos futuros
-                setTimeout(() => {
-                  sessionStorage.removeItem('recentLoginRedirect');
-                }, 5000);
-                
-                window.location.href = './app.html';
-              } else {
-                console.log("Redirecionamento recente detectado, evitando loop");
-                sessionStorage.removeItem('recentLoginRedirect');
-              }
-            }
-          } else {
-            console.log("Usuário não autenticado, permanecendo na página de login");
-          }
-        });
-      } else {
-        console.error("Firebase não está disponível");
-        // Configurar botões mesmo sem Firebase
-        setupLoginButtons();
-      }
-      
-      // Função para mostrar mensagens de erro
-      function showError(message) {
-        // Verifica se já existe um elemento de mensagem
-        let messageElement = document.getElementById('message-container');
-        if (!messageElement) {
-          // Cria o elemento se não existir
-          messageElement = document.createElement('div');
-          messageElement.id = 'message-container';
-          document.body.appendChild(messageElement);
+        // Verificar se os campos foram preenchidos
+        if (!email || !password) {
+          window.authUtils.showError('Por favor, preencha todos os campos');
+          return;
         }
         
-        // Limpa qualquer mensagem anterior
-        messageElement.innerHTML = '';
-        
-        // Cria o elemento da nova mensagem
-        const msg = document.createElement('div');
-        msg.className = 'message message-error';
-        msg.textContent = message;
-        
-        // Adiciona à área de mensagens
-        messageElement.appendChild(msg);
-        
-        // Remove após 4 segundos
-        setTimeout(() => {
-          msg.classList.add('fade-out');
-          setTimeout(() => {
-            if (messageElement.contains(msg)) {
-              messageElement.removeChild(msg);
-            }
-          }, 500);
-        }, 4000);
-      }
+        // Fazer login
+        window.authUtils.loginWithEmail(email, password);
+      });
       
-      // Configuração dos botões de login/cadastro
-      function setupLoginButtons() {
-        console.log("Configurando botões de login e cadastro");
-        
-        // Login com email/senha
-        const loginButton = document.getElementById('login-button');
-        if (loginButton) {
-          loginButton.addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            // Verificar se os campos foram preenchidos
-            if (!email || !password) {
-              showError('Por favor, preencha todos os campos');
-              return;
-            }
-            
-            // Mostrar indicador de carregamento
-            loginButton.disabled = true;
-            const originalContent = loginButton.innerHTML;
-            loginButton.innerHTML = '<div class="login-button-spinner"></div> Entrando...';
-            
-            // Marcar que um login está em andamento
-            sessionStorage.setItem('authInProgress', 'true');
-            
-            // Fazer login
-            firebase.auth().signInWithEmailAndPassword(email, password)
-              .then((userCredential) => {
-                console.log('Login com email bem-sucedido:', userCredential.user.uid);
-                // Definir flags para controlar redirecionamento
-                sessionStorage.setItem('loginJustCompleted', 'true');
-                sessionStorage.setItem('lastRedirect', Date.now().toString());
-                sessionStorage.setItem('authState', 'authenticated');
-                
-                // Redirecionar para a página principal
-                window.location.href = './app.html';
-              })
-              .catch((error) => {
-                console.error('Erro de login com email:', error);
-                
-                // Limpar flag de autenticação em andamento
-                sessionStorage.removeItem('authInProgress');
-                
-                // Restaurar botão
-                loginButton.disabled = false;
-                loginButton.innerHTML = originalContent;
-                
-                // Mostrar mensagem de erro apropriada
-                let errorMessage = 'Erro ao fazer login. Verifique seu email e senha.';
-                
-                if (error.code === 'auth/user-not-found') {
-                  errorMessage = 'Usuário não encontrado. Verifique seu email ou crie uma conta.';
-                } else if (error.code === 'auth/wrong-password') {
-                  errorMessage = 'Senha incorreta. Tente novamente.';
-                } else if (error.code === 'auth/invalid-email') {
-                  errorMessage = 'Email inválido. Verifique o formato do email.';
-                } else if (error.code === 'auth/too-many-requests') {
-                  errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
-                }
-                
-                // Mostrar mensagem
-                showError(errorMessage);
-              });
-          });
-        }
-        
-        // Login com Google
-        const googleButton = document.getElementById('google-login');
-        if (googleButton) {
-          googleButton.addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            
-            // Mostrar indicador de carregamento
-            googleButton.disabled = true;
-            const originalContent = googleButton.innerHTML;
-            googleButton.innerHTML = '<div class="login-button-spinner"></div> Conectando...';
-            
-            // Marcar que um login está em andamento
-            sessionStorage.setItem('authInProgress', 'true');
-            
-            firebase.auth().signInWithPopup(provider)
-              .then((result) => {
-                // Login bem-sucedido
-                const user = result.user;
-                console.log('Login com Google bem-sucedido:', user.uid);
-                
-                // Verificar se é um novo usuário
-                const isNewUser = result.additionalUserInfo.isNewUser;
-                if (isNewUser) {
-                  console.log("Novo usuário detectado, criando dados iniciais");
-                  // Criar dados iniciais do usuário
-                  createUserData(user.uid);
-                }
-                
-                // Definir flags para controlar redirecionamento
-                sessionStorage.setItem('loginJustCompleted', 'true');
-                sessionStorage.setItem('lastRedirect', Date.now().toString());
-                sessionStorage.setItem('authState', 'authenticated');
-                
-                // Redirecionar para a página principal
-                window.location.href = './app.html';
-              })
-              .catch((error) => {
-                console.error('Erro de login com Google:', error);
-                
-                // Limpar flag de autenticação em andamento
-                sessionStorage.removeItem('authInProgress');
-                
-                // Restaurar botão
-                googleButton.disabled = false;
-                googleButton.innerHTML = originalContent;
-                
-                // Mostrar mensagem de erro
-                showError('Erro ao entrar com Google: ' + error.message);
-              });
-          });
-        }
-        
-        // Registro de novo usuário
-        const registerButton = document.getElementById('register-button');
-        if (registerButton) {
-          registerButton.addEventListener('click', () => {
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const confirmPassword = document.getElementById('reg-password-confirm').value;
-            
-            // Verificar se os campos foram preenchidos
-            if (!name || !email || !password || !confirmPassword) {
-              showError('Por favor, preencha todos os campos');
-              return;
-            }
-            
-            // Verificar se as senhas conferem
-            if (password !== confirmPassword) {
-              showError('As senhas não conferem');
-              return;
-            }
-            
-            // Mostrar indicador de carregamento
-            registerButton.disabled = true;
-            const originalContent = registerButton.innerHTML;
-            registerButton.innerHTML = '<div class="login-button-spinner"></div> Registrando...';
-            
-            // Marcar que um registro está em andamento
-            sessionStorage.setItem('authInProgress', 'true');
-            
-            firebase.auth().createUserWithEmailAndPassword(email, password)
-              .then((userCredential) => {
-                // Conta criada com sucesso
-                const user = userCredential.user;
-                console.log('Usuário registrado com sucesso:', user.uid);
-                
-                // Atualizar o perfil do usuário com o nome
-                return user.updateProfile({
-                  displayName: name
-                }).then(() => {
-                  // Criar dados iniciais do usuário
-                  createUserData(user.uid);
-                  
-                  // Definir flags para controlar redirecionamento
-                  sessionStorage.setItem('loginJustCompleted', 'true');
-                  sessionStorage.setItem('lastRedirect', Date.now().toString());
-                  sessionStorage.setItem('authState', 'authenticated');
-                  
-                  // Redirecionar para a página principal
-                  window.location.href = './app.html';
-                });
-              })
-              .catch((error) => {
-                console.error('Erro ao registrar usuário:', error);
-                
-                // Limpar flag de autenticação em andamento
-                sessionStorage.removeItem('authInProgress');
-                
-                // Restaurar botão
-                registerButton.disabled = false;
-                registerButton.innerHTML = originalContent;
-                
-                // Mostrar mensagem de erro apropriada
-                let errorMessage = 'Erro ao criar conta. Tente novamente.';
-                
-                if (error.code === 'auth/email-already-in-use') {
-                  errorMessage = 'Este email já está em uso. Tente fazer login.';
-                } else if (error.code === 'auth/invalid-email') {
-                  errorMessage = 'Email inválido. Verifique o formato do email.';
-                } else if (error.code === 'auth/weak-password') {
-                  errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
-                }
-                
-                // Mostrar mensagem
-                showError(errorMessage);
-              });
-          });
-        }
-        
-        // Esqueceu a senha
-        const forgotPasswordLink = document.getElementById('forgot-password');
-        if (forgotPasswordLink) {
-          forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            if (!email) {
-              showError('Por favor, digite seu e-mail');
-              return;
-            }
-            
-            firebase.auth().sendPasswordResetEmail(email)
-              .then(() => {
-                // Mostrar mensagem de sucesso
-                alert('Um email de redefinição de senha foi enviado para ' + email);
-              })
-              .catch((error) => {
-                console.error('Erro ao enviar email de redefinição:', error);
-                showError('Erro ao enviar email de redefinição: ' + error.message);
-              });
-          });
-        }
-        
-        // Permitir login pressionando Enter no campo de senha
-        const passwordField = document.getElementById('password');
-        if (passwordField) {
-          passwordField.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter') {
-              document.getElementById('login-button').click();
-            }
-          });
-        }
-        
-        // Permitir registro pressionando Enter no campo de confirmação de senha
-        const confirmPasswordField = document.getElementById('reg-password-confirm');
-        if (confirmPasswordField) {
-          confirmPasswordField.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter') {
-              document.getElementById('register-button').click();
-            }
-          });
-        }
-      }
+      document.getElementById('google-login').addEventListener('click', () => {
+        window.authUtils.loginWithGoogle();
+      });
       
-      // Função para criar dados iniciais do usuário (fallback)
-      function createUserData(userId) {
-        if (!userId) return Promise.reject(new Error('ID de usuário não fornecido'));
+      // Configuração do botão de registro
+      document.getElementById('register-button').addEventListener('click', () => {
+        const name = document.getElementById('reg-name').value;
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        const confirmPassword = document.getElementById('reg-password-confirm').value;
         
-        const userData = {
-          createdAt: new Date().toISOString(),
-          settings: {
-            theme: 'light',
-            notifications: true
-          },
-          transcriptions: {
-            count: 0
-          }
-        };
+        // Verificar se os campos foram preenchidos
+        if (!name || !email || !password || !confirmPassword) {
+          window.authUtils.showError('Por favor, preencha todos os campos');
+          return;
+        }
         
-        return firebase.database().ref('users/' + userId).set(userData)
+        // Verificar se as senhas conferem
+        if (password !== confirmPassword) {
+          window.authUtils.showError('As senhas não conferem');
+          return;
+        }
+        
+        // Fazer registro
+        window.authUtils.registerUser(email, password, name);
+      });
+      
+      // Esqueceu a senha
+      document.getElementById('forgot-password').addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        if (!email) {
+          window.authUtils.showError('Por favor, digite seu e-mail');
+          return;
+        }
+        
+        firebase.auth().sendPasswordResetEmail(email)
           .then(() => {
-            console.log('Dados iniciais do usuário criados com sucesso');
-            return userData;
+            alert('Um email de redefinição de senha foi enviado para ' + email);
           })
           .catch((error) => {
-            console.error('Erro ao criar dados iniciais do usuário:', error);
-            return null;
+            console.error('Erro ao enviar email de redefinição:', error);
+            window.authUtils.showError('Erro ao enviar email de redefinição: ' + error.message);
           });
-      }
+      });
+      
+      // Permitir login pressionando Enter no campo de senha
+      document.getElementById('password').addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          document.getElementById('login-button').click();
+        }
+      });
+      
+      // Permitir registro pressionando Enter no campo de confirmação de senha
+      document.getElementById('reg-password-confirm').addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          document.getElementById('register-button').click();
+        }
+      });
     });
   </script>
+</body>
+</html>
