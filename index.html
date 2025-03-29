@@ -8,7 +8,6 @@
   <!-- Meta tags de segurança -->
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta name="theme-color" content="#3498db">
   
   <link rel="stylesheet" href="css/styles.css">
   <link rel="manifest" href="manifest.json">
@@ -29,39 +28,11 @@
   <script src="js/audio-recorder.js"></script>
   <script src="js/transcription.js"></script>
   <script src="js/ui-controller.js"></script>
-  <script src="js/app.js" defer></script>
-  <script src="js/register-sw.js" defer></script>
-  <script src="js/diagnostico.js" defer></script>
-
-  <style>
-    .splash {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      font-family: 'Roboto', sans-serif;
-      background-color: #f4f4f4;
-      color: #2c3e50;
-    }
-    .splash h1 {
-      font-size: 2rem;
-      font-weight: bold;
-    }
-    .splash p {
-      margin-top: 1rem;
-      font-size: 1.1rem;
-    }
-    .hidden { display: none; }
-  </style>
+  <script src="js/app.js"></script>
+  <script src="js/register-sw.js"></script>
 </head>
 <body>
-  <div id="splash" class="splash">
-    <h1>MapzyVox IA</h1>
-    <p id="status-text">Carregando aplicação...</p>
-  </div>
-
-  <div id="app" class="hidden container">
+  <div class="container">
     <div class="app-header">
       <h1 class="app-title">Mapzy Vox IA</h1>
       <p class="app-subtitle">Transcritor e Processador de Voz por IA</p>
@@ -78,7 +49,7 @@
           <span class="user-email" id="userEmail">email@exemplo.com</span>
         </div>
       </div>
-      <button class="logout-button" id="logout-button">
+      <button class="logout-button" onclick="window.authUtils.logout()">
         <span class="material-icons">logout</span> Sair
       </button>
     </div>
@@ -168,117 +139,81 @@
         <button id="deleteAccountBtn" style="background-color: #e74c3c;">Excluir Conta</button>
       </div>
     </div>
+    
+    <!-- Modal para salvar transcrição -->
+    <div id="saveModal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3 class="modal-title">Salvar Transcrição</h3>
+        <div class="modal-form-group">
+          <label for="transcriptionTitle">Título da Transcrição:</label>
+          <input type="text" id="transcriptionTitle" placeholder="Digite um título para esta transcrição">
+        </div>
+        <button id="confirmSaveBtn">Salvar</button>
+      </div>
+    </div>
+    
+    <!-- Banner de instalação do PWA -->
+    <div id="pwaInstallPrompt" style="display: none;">
+      <p>Instale o Mapzy Vox IA para um acesso mais rápido e recursos offline.</p>
+      <button id="installButton">Instalar</button>
+      <button id="dismissButton">Agora não</button>
+    </div>
   </div>
-
+  
   <script>
-    const splash = document.getElementById('splash');
-    const app = document.getElementById('app');
-    const statusText = document.getElementById('status-text');
-
-    function showApp() {
-      console.log('Mostrando aplicação...');
-      splash.classList.add('hidden');
-      app.classList.remove('hidden');
-    }
-
-    function initApp() {
-      console.log('Iniciando verificação de autenticação...');
-      firebase.auth().onAuthStateChanged((user) => {
-        console.log("Estado de autenticação:", user ? "Logado como " + (user.email || user.uid) : "Não logado");
-        if (user) {
-          console.log('Usuário autenticado, configurando interface...');
-          document.getElementById('userName').textContent = user.displayName || user.email || "Usuário";
-          document.getElementById('userEmail').textContent = user.email || "email@exemplo.com";
-          window.userId = user.uid;
-          
-          try {
-            console.log('Carregando histórico do usuário...');
-            if (typeof loadUserHistory === 'function') {
-              loadUserHistory(user.uid);
-            } else {
-              console.warn('Função loadUserHistory não encontrada');
-            }
-          } catch (error) {
-            console.error('Erro ao carregar histórico:', error);
-          }
-          
-          console.log('Mostrando a aplicação...');
-          showApp();
-        } else {
-          console.log('Usuário não autenticado, redirecionando para login...');
-          window.location.href = './login.html';
-        }
-      });
-    }
-
-    function loadUserHistory(userId) {
-      console.log('Carregando histórico para userId:', userId);
-      if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
-        try {
-          window.transcriptionUtils.loadTranscriptionsList();
-        } catch (error) {
-          console.error('Erro ao carregar lista de transcrições:', error);
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+      // Inicializar componentes da UI
+      if (window.uiController && typeof window.uiController.initUI === 'function') {
+        window.uiController.initUI();
       } else {
-        console.warn('transcriptionUtils não disponível para carregar histórico');
+        console.warn('UI Controller não encontrado');
       }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log('DOM carregado, inicializando aplicação...');
       
-      const timeoutFallback = new Promise(resolve => setTimeout(resolve, 1500));
-
-      Promise.race([
-        new Promise(resolve => {
-          if ('serviceWorker' in navigator) {
-            console.log('Aguardando Service Worker...');
-            navigator.serviceWorker.ready.then(resolve);
+      // Inicializar o módulo de transcrição
+      if (window.transcriptionUtils && typeof window.transcriptionUtils.initTranscription === 'function') {
+        window.transcriptionUtils.initTranscription();
+      } else {
+        console.warn('Módulo de transcrição não encontrado');
+      }
+      
+      // Inicializar o módulo de gravação de áudio
+      if (typeof initAudioRecorder === 'function') {
+        initAudioRecorder();
+      } else {
+        console.warn('Módulo de gravação de áudio não encontrado');
+      }
+      
+      // Checar a autenticação
+      if (window.authUtils && typeof window.authUtils.checkAuthState === 'function') {
+        window.authUtils.checkAuthState(function(user) {
+          if (user) {
+            console.log('Usuário autenticado:', user.email);
           } else {
-            console.log('Service Worker não suportado');
-            resolve();
+            console.log('Usuário não autenticado, redirecionando...');
           }
-        }),
-        timeoutFallback
-      ]).then(() => {
-        console.log('Iniciando app após carregamento de Service Worker ou timeout');
-        initApp();
-      });
-
-      document.getElementById("logout-button").addEventListener("click", () => {
-        console.log('Botão de logout clicado');
-        firebase.auth().signOut().then(() => {
-          window.location.href = './login.html';
         });
-      });
-
-      // Event listeners para controles de gravação
-      document.getElementById("startRecording").addEventListener("click", () => {
-        if (typeof startRecording === 'function') {
-          startRecording();
-        } else {
-          console.error('Função startRecording não encontrada');
-        }
-      });
+      } else {
+        console.warn('Módulo de autenticação não encontrado');
+      }
       
-      document.getElementById("stopRecording").addEventListener("click", () => {
-        if (typeof stopRecording === 'function') {
-          stopRecording();
-        } else {
-          console.error('Função stopRecording não encontrada');
-        }
-      });
-      
-      document.getElementById("processText").addEventListener("click", () => {
-        const text = document.getElementById("transcription").innerText;
-        if (text.trim()) {
-          if (typeof processTranscription === 'function') {
-            processTranscription(text);
+      // Carregar a chave API
+      if (window.storageUtils && typeof window.storageUtils.loadApiKey === 'function') {
+        window.storageUtils.loadApiKey().then(apiKey => {
+          const apiKeyInput = document.getElementById('apiKey');
+          const apiKeySettingInput = document.getElementById('apiKeySetting');
+          
+          if (apiKey) {
+            if (apiKeyInput) apiKeyInput.value = apiKey;
+            if (apiKeySettingInput) apiKeySettingInput.value = apiKey;
+            console.log('Chave API carregada com sucesso');
           } else {
-            console.error('Função processTranscription não encontrada');
+            console.log('Nenhuma chave API encontrada');
           }
-        }
-      });
+        });
+      } else {
+        console.warn('Módulo de armazenamento não encontrado');
+      }
     });
   </script>
 </body>

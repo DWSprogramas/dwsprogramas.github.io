@@ -4,21 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
+  
+  <!-- Meta tags de segurança -->
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  
+  <!-- PWA elementos -->
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#3498db">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Mapzy Vox">
   <link rel="apple-touch-icon" href="./ios/180.png">
+  
   <link rel="stylesheet" href="./css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Biblioteca Material Icons da Google para ícones -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Alpine.js para interações simples -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Scripts Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- Scripts da aplicação na ordem correta de dependência -->
   <script src="./js/firebase-config.js"></script>
   <script src="./js/security.js"></script>
   <script src="./js/storage-manager.js"></script>
@@ -32,10 +41,12 @@
         <h1>Mapzy Vox IA</h1>
         <p>Transcritor e Processador de Voz por IA</p>
       </div>
+      
       <div class="tabs">
         <button class="tab-btn" :class="{ 'active': isLoginMode }" @click="isLoginMode = true">Entrar</button>
         <button class="tab-btn" :class="{ 'active': !isLoginMode }" @click="isLoginMode = false">Cadastrar</button>
       </div>
+      
       <div x-show="isLoginMode" class="login-form">
         <div class="input-group">
           <label for="email">E-mail</label>
@@ -56,6 +67,7 @@
           <a href="#" class="text-link" id="forgot-password">Esqueceu a senha?</a>
         </p>
       </div>
+      
       <div x-show="!isLoginMode" class="register-form">
         <div class="input-group">
           <label for="reg-name">Nome</label>
@@ -79,68 +91,69 @@
       </div>
     </div>
   </div>
+  
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('DOM carregado, verificando autenticação...');
-      
-      // Verificar autenticação
+      // Verificar se o usuário já está logado
       firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-          console.log('Usuário já autenticado, redirecionando para a página principal...');
+          // Usuário já está logado, redirecionar para a página principal
           window.location.href = './index.html';
-        } else {
-          console.log('Usuário não autenticado, permanecendo na página de login');
         }
       });
-
+      
+      // Configuração dos botões de login
       document.getElementById('login-button').addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
+        // Verificar se os campos foram preenchidos
         if (!email || !password) {
           window.authUtils.showError('Por favor, preencha todos os campos');
           return;
         }
         
-        console.log('Tentando login com email...');
+        // Fazer login
         window.authUtils.loginWithEmail(email, password);
       });
-
+      
       document.getElementById('google-login').addEventListener('click', () => {
-        console.log('Tentando login com Google...');
         window.authUtils.loginWithGoogle();
       });
-
+      
+      // Configuração do botão de registro
       document.getElementById('register-button').addEventListener('click', () => {
         const name = document.getElementById('reg-name').value;
         const email = document.getElementById('reg-email').value;
         const password = document.getElementById('reg-password').value;
         const confirmPassword = document.getElementById('reg-password-confirm').value;
-
+        
+        // Verificar se os campos foram preenchidos
         if (!name || !email || !password || !confirmPassword) {
           window.authUtils.showError('Por favor, preencha todos os campos');
           return;
         }
-
+        
+        // Verificar se as senhas conferem
         if (password !== confirmPassword) {
           window.authUtils.showError('As senhas não conferem');
           return;
         }
-
-        console.log('Tentando registrar novo usuário...');
+        
+        // Fazer registro
         window.authUtils.registerUser(email, password, name);
       });
-
+      
+      // Esqueceu a senha
       document.getElementById('forgot-password').addEventListener('click', (e) => {
         e.preventDefault();
-        const email = document.getElementById('email').value;
         
+        const email = document.getElementById('email').value;
         if (!email) {
           window.authUtils.showError('Por favor, digite seu e-mail');
           return;
         }
         
-        console.log('Enviando email de recuperação de senha...');
         firebase.auth().sendPasswordResetEmail(email)
           .then(() => {
             alert('Um email de redefinição de senha foi enviado para ' + email);
@@ -150,25 +163,20 @@
             window.authUtils.showError('Erro ao enviar email de redefinição: ' + error.message);
           });
       });
-
-      // Permitir envio do formulário de login pressionando Enter
+      
+      // Permitir login pressionando Enter no campo de senha
       document.getElementById('password').addEventListener('keyup', (event) => {
         if (event.key === 'Enter') {
           document.getElementById('login-button').click();
         }
       });
-
-      // Permitir envio do formulário de registro pressionando Enter
+      
+      // Permitir registro pressionando Enter no campo de confirmação de senha
       document.getElementById('reg-password-confirm').addEventListener('keyup', (event) => {
         if (event.key === 'Enter') {
           document.getElementById('register-button').click();
         }
       });
-      
-      // Verificação adicional para debugging
-      console.log('Firebase disponível:', typeof firebase !== 'undefined');
-      console.log('Firebase auth disponível:', firebase && typeof firebase.auth === 'function');
-      console.log('authUtils disponível:', typeof window.authUtils !== 'undefined');
     });
   </script>
 </body>
