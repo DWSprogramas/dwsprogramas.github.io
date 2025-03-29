@@ -219,5 +219,119 @@
     });
   </script>
   <script src="js/api-key-fix.js"></script>
+  <script>
+// Script para corrigir a navegação por abas
+(function() {
+  console.log("Inicializando correção das abas...");
+  
+  // Seletores dos elementos
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  console.log("Abas encontradas:", tabs.length);
+  console.log("Conteúdos de abas encontrados:", tabContents.length);
+  
+  // Remover manipuladores de eventos existentes
+  tabs.forEach(tab => {
+    // Clonar e substituir para remover todos os manipuladores
+    const newTab = tab.cloneNode(true);
+    tab.parentNode.replaceChild(newTab, tab);
+    
+    // Adicionar novo manipulador diretamente
+    newTab.addEventListener('click', function() {
+      console.log("Clique na aba:", this.getAttribute('data-tab'));
+      
+      // Remover classe ativa de todas as abas
+      tabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+      
+      // Adicionar classe ativa à aba clicada
+      this.classList.add('active');
+      const tabId = this.getAttribute('data-tab');
+      const contentElement = document.getElementById(tabId + 'Tab');
+      
+      if (contentElement) {
+        contentElement.classList.add('active');
+        console.log("Conteúdo ativado:", tabId + 'Tab');
+        
+        // Se for a aba de histórico, carregar transcrições
+        if (tabId === 'history') {
+          console.log("Carregando histórico de transcrições...");
+          if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
+            window.transcriptionUtils.loadTranscriptionsList();
+          } else {
+            console.warn("Função loadTranscriptionsList não encontrada");
+            // Tentar carregar diretamente
+            loadTranscriptionsDirectly();
+          }
+        }
+      } else {
+        console.error("Elemento de conteúdo não encontrado:", tabId + 'Tab');
+      }
+    });
+  });
+  
+  // Função para carregar transcrições diretamente se a função normal não estiver disponível
+  function loadTranscriptionsDirectly() {
+    if (!firebase || !firebase.auth) return;
+    
+    const user = firebase.auth().currentUser;
+    if (!user) return;
+    
+    const transcriptionList = document.getElementById('transcriptionList');
+    const noTranscriptions = document.getElementById('noTranscriptions');
+    
+    if (!transcriptionList) return;
+    
+    // Tentar o caminho direto primeiro
+    let dbRef = firebase.database().ref(`users/${user.uid}/transcriptions`);
+    
+    dbRef.once('value')
+      .then(snapshot => {
+        if (!snapshot.exists()) {
+          // Se não encontrar, tentar o caminho alternativo
+          dbRef = firebase.database().ref(`MapzyVox/users/${user.uid}/transcriptions`);
+          return dbRef.once('value');
+        }
+        return snapshot;
+      })
+      .then(snapshot => {
+        transcriptionList.innerHTML = '';
+        
+        if (!snapshot.exists() || snapshot.numChildren() === 0) {
+          if (noTranscriptions) noTranscriptions.style.display = 'block';
+          return;
+        }
+        
+        if (noTranscriptions) noTranscriptions.style.display = 'none';
+        
+        // Converter para array e ordenar por data
+        const transcriptions = [];
+        snapshot.forEach(childSnapshot => {
+          transcriptions.push({
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          });
+        });
+        
+        // Ordenar por data (mais recentes primeiro)
+        transcriptions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        
+        // Criar elemento para cada transcrição
+        transcriptions.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'transcription-item';
+          
+          const title = item.title || 'Transcrição sem título';
+          const date = item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Data desconhecida';
+          const text = item.text || '';
+          const preview = text.substring(0, 100) + (text.length > 100 ? '...' : '');
+          
+          li.innerHTML = `
+            <div class="transcription-title">${title}</div>
+            <div class="transcription-date">${date}</div>
+            <div class="transcription-content">${preview}</div>
+            <div class="transcription-controls">
+              <button class="view-btn" data-i
 </body>
 </html>
