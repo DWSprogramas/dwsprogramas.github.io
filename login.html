@@ -1,198 +1,71 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
-  
-  <!-- Meta tags de segurança -->
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  
-  <!-- PWA elementos -->
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#3498db">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Mapzy Vox">
-  <link rel="apple-touch-icon" href="./ios/180.png">
-  
-  <link rel="stylesheet" href="./css/styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Biblioteca Material Icons da Google para ícones -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <!-- Alpine.js para interações simples -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Scripts Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <!-- Scripts da aplicação na ordem correta de dependência -->
-  <script src="./js/firebase-config.js"></script>
-  <script src="./js/security.js"></script>
-  <script src="./js/storage-manager.js"></script>
-  <script src="./js/user-auth.js"></script>
-  <script src="./js/register-sw.js"></script>
-
-  <style>
-    /* Adicionar estilos para mensagens de erro e status */
-    #message-container {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      max-width: 90%;
-      width: 400px;
-    }
-    .message {
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      animation: slideIn 0.3s ease-out;
-    }
-    .message-error {
-      background-color: #f44336;
-      color: white;
-    }
-    .message-success {
-      background-color: #4CAF50;
-      color: white;
-    }
-    .fade-out {
-      animation: fadeOut 0.5s forwards;
-    }
-    @keyframes slideIn {
-      from { transform: translateY(-20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-    /* Estilo para spinner de carregamento */
-    .login-button-spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      margin-right: 8px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
-</head>
-<body class="login-page">
-  <div class="container" x-data="{ isLoginMode: true }">
-    <div class="auth-card">
-      <div class="app-logo">
-        <h1>Mapzy Vox IA</h1>
-        <p>Transcritor e Processador de Voz por IA</p>
-      </div>
-      
-      <div class="tabs">
-        <button class="tab-btn" :class="{ 'active': isLoginMode }" @click="isLoginMode = true">Entrar</button>
-        <button class="tab-btn" :class="{ 'active': !isLoginMode }" @click="isLoginMode = false">Cadastrar</button>
-      </div>
-      
-      <div x-show="isLoginMode" class="login-form">
-        <div class="input-group">
-          <label for="email">E-mail</label>
-          <input type="email" id="email" placeholder="Seu e-mail">
-        </div>
-        <div class="input-group">
-          <label for="password">Senha</label>
-          <input type="password" id="password" placeholder="Sua senha">
-        </div>
-        <button id="login-button" class="btn btn-primary">
-          <span class="material-icons">login</span> Entrar
-        </button>
-        <div class="divider">ou</div>
-        <button id="google-login" class="btn btn-outline google-btn">
-          <span class="material-icons google-icon">g_translate</span> Continuar com Google
-        </button>
-        <p class="text-center mt-2">
-          <a href="#" class="text-link" id="forgot-password">Esqueceu a senha?</a>
-        </p>
-      </div>
-      
-      <div x-show="!isLoginMode" class="register-form">
-        <div class="input-group">
-          <label for="reg-name">Nome</label>
-          <input type="text" id="reg-name" placeholder="Seu nome">
-        </div>
-        <div class="input-group">
-          <label for="reg-email">E-mail</label>
-          <input type="email" id="reg-email" placeholder="Seu e-mail">
-        </div>
-        <div class="input-group">
-          <label for="reg-password">Senha</label>
-          <input type="password" id="reg-password" placeholder="Crie uma senha">
-        </div>
-        <div class="input-group">
-          <label for="reg-password-confirm">Confirme a senha</label>
-          <input type="password" id="reg-password-confirm" placeholder="Confirme sua senha">
-        </div>
-        <button id="register-button" class="btn btn-primary">
-          <span class="material-icons">person_add</span> Cadastrar
-        </button>
-      </div>
-    </div>
-  </div>
-  
-  <script>
-    // Prevenir verificações de autenticação duplicadas
-    window.authCheckStarted = false;
-    
+<script>
     document.addEventListener('DOMContentLoaded', () => {
       console.log("Página de login carregada");
       
-      if (window.authCheckStarted) {
-        console.log("Verificação de autenticação já iniciada, ignorando...");
+      // Verificar se já estamos em um fluxo de autenticação
+      if (sessionStorage.getItem('authInProgress') === 'true') {
+        console.log("Fluxo de autenticação já em andamento, verificando estado...");
+        
+        // Limpar a flag depois de um tempo para evitar loops infinitos
+        setTimeout(() => {
+          sessionStorage.removeItem('authInProgress');
+        }, 5000);
+      }
+      
+      // Verificar se estamos vindo de um redirecionamento recente
+      const lastRedirect = sessionStorage.getItem('lastRedirect');
+      const now = Date.now();
+      
+      if (lastRedirect && (now - parseInt(lastRedirect)) < 2000) {
+        console.log("Redirecionamento recente detectado, evitando loop");
+        sessionStorage.removeItem('lastRedirect');
+        setupLoginButtons(); // Apenas configurar botões, sem verificar autenticação
         return;
       }
       
-      window.authCheckStarted = true;
-      console.log("Iniciando verificação de autenticação...");
+      // Configurar botões de login primeiro, independente da autenticação
+      setupLoginButtons();
       
-      // Redirecionar para a página principal se já estiver logado
+      // Verificar estado de autenticação
       console.log("Verificando estado de autenticação...");
       if (typeof firebase !== 'undefined' && firebase.auth) {
         firebase.auth().onAuthStateChanged((user) => {
           if (user) {
             console.log("Usuário já autenticado:", user.email);
-            console.log("Redirecionando para a página principal...");
-            window.location.href = './index.html';
+            
+            // Verificar se acabamos de fazer login
+            if (sessionStorage.getItem('loginJustCompleted') === 'true') {
+              console.log("Login recém-concluído, redirecionando para app.html");
+              sessionStorage.removeItem('loginJustCompleted');
+              sessionStorage.setItem('lastRedirect', now.toString());
+              sessionStorage.setItem('authState', 'authenticated');
+              window.location.href = './app.html';
+            } else {
+              // Verificar se já redirecionamos recentemente
+              if (!sessionStorage.getItem('recentLoginRedirect')) {
+                console.log("Redirecionando para app.html");
+                sessionStorage.setItem('recentLoginRedirect', 'true');
+                sessionStorage.setItem('lastRedirect', now.toString());
+                
+                // Limpar o flag após um período para permitir redirecionamentos futuros
+                setTimeout(() => {
+                  sessionStorage.removeItem('recentLoginRedirect');
+                }, 5000);
+                
+                window.location.href = './app.html';
+              } else {
+                console.log("Redirecionamento recente detectado, evitando loop");
+                sessionStorage.removeItem('recentLoginRedirect');
+              }
+            }
           } else {
             console.log("Usuário não autenticado, permanecendo na página de login");
-            setupLoginButtons();
           }
         });
       } else {
         console.error("Firebase não está disponível");
-        // Tentar novamente após um curto período
-        setTimeout(() => {
-          if (typeof firebase !== 'undefined' && firebase.auth) {
-            firebase.auth().onAuthStateChanged((user) => {
-              if (user) {
-                console.log("Usuário já autenticado (após retry):", user.email);
-                window.location.href = './index.html';
-              } else {
-                console.log("Usuário não autenticado (após retry)");
-                setupLoginButtons();
-              }
-            });
-          } else {
-            console.error("Firebase ainda não está disponível após retry");
-            showError("Erro ao conectar com o serviço de autenticação. Tente recarregar a página.");
-            setupLoginButtons(); // Configurar botões mesmo assim
-          }
-        }, 2000);
+        // Configurar botões mesmo sem Firebase
+        setupLoginButtons();
       }
       
       // Função para mostrar mensagens de erro
@@ -250,45 +123,47 @@
             const originalContent = loginButton.innerHTML;
             loginButton.innerHTML = '<div class="login-button-spinner"></div> Entrando...';
             
+            // Marcar que um login está em andamento
+            sessionStorage.setItem('authInProgress', 'true');
+            
             // Fazer login
-            if (window.authUtils && typeof window.authUtils.loginWithEmail === 'function') {
-              window.authUtils.loginWithEmail(email, password)
-                .catch(error => {
-                  // Restaurar botão em caso de erro
-                  loginButton.disabled = false;
-                  loginButton.innerHTML = originalContent;
-                });
-            } else {
-              // Implementação fallback se authUtils não estiver disponível
-              firebase.auth().signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                  console.log('Login com email bem-sucedido:', userCredential.user.uid);
-                  window.location.href = './index.html';
-                })
-                .catch((error) => {
-                  console.error('Erro de login com email:', error);
-                  
-                  // Restaurar botão
-                  loginButton.disabled = false;
-                  loginButton.innerHTML = originalContent;
-                  
-                  // Mostrar mensagem de erro apropriada
-                  let errorMessage = 'Erro ao fazer login. Verifique seu email e senha.';
-                  
-                  if (error.code === 'auth/user-not-found') {
-                    errorMessage = 'Usuário não encontrado. Verifique seu email ou crie uma conta.';
-                  } else if (error.code === 'auth/wrong-password') {
-                    errorMessage = 'Senha incorreta. Tente novamente.';
-                  } else if (error.code === 'auth/invalid-email') {
-					errorMessage = 'Email inválido. Verifique o formato do email.';
-                  } else if (error.code === 'auth/too-many-requests') {
-                    errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
-                  }
-                  
-                  // Mostrar mensagem
-                  showError(errorMessage);
-                });
-            }
+            firebase.auth().signInWithEmailAndPassword(email, password)
+              .then((userCredential) => {
+                console.log('Login com email bem-sucedido:', userCredential.user.uid);
+                // Definir flags para controlar redirecionamento
+                sessionStorage.setItem('loginJustCompleted', 'true');
+                sessionStorage.setItem('lastRedirect', Date.now().toString());
+                sessionStorage.setItem('authState', 'authenticated');
+                
+                // Redirecionar para a página principal
+                window.location.href = './app.html';
+              })
+              .catch((error) => {
+                console.error('Erro de login com email:', error);
+                
+                // Limpar flag de autenticação em andamento
+                sessionStorage.removeItem('authInProgress');
+                
+                // Restaurar botão
+                loginButton.disabled = false;
+                loginButton.innerHTML = originalContent;
+                
+                // Mostrar mensagem de erro apropriada
+                let errorMessage = 'Erro ao fazer login. Verifique seu email e senha.';
+                
+                if (error.code === 'auth/user-not-found') {
+                  errorMessage = 'Usuário não encontrado. Verifique seu email ou crie uma conta.';
+                } else if (error.code === 'auth/wrong-password') {
+                  errorMessage = 'Senha incorreta. Tente novamente.';
+                } else if (error.code === 'auth/invalid-email') {
+                  errorMessage = 'Email inválido. Verifique o formato do email.';
+                } else if (error.code === 'auth/too-many-requests') {
+                  errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
+                }
+                
+                // Mostrar mensagem
+                showError(errorMessage);
+              });
           });
         }
         
@@ -303,37 +178,44 @@
             const originalContent = googleButton.innerHTML;
             googleButton.innerHTML = '<div class="login-button-spinner"></div> Conectando...';
             
-            if (window.authUtils && typeof window.authUtils.loginWithGoogle === 'function') {
-              window.authUtils.loginWithGoogle();
-            } else {
-              // Implementação fallback
-              firebase.auth().signInWithPopup(provider)
-                .then((result) => {
-                  // Login bem-sucedido
-                  const user = result.user;
-                  console.log('Login com Google bem-sucedido:', user.uid);
-                  
-                  // Verificar se é um novo usuário
-                  const isNewUser = result.additionalUserInfo.isNewUser;
-                  if (isNewUser) {
-                    // Criar dados iniciais do usuário
-                    createUserData(user.uid);
-                  }
-                  
-                  // Redirecionar para a página principal
-                  window.location.href = './index.html';
-                })
-                .catch((error) => {
-                  console.error('Erro de login com Google:', error);
-                  
-                  // Restaurar botão
-                  googleButton.disabled = false;
-                  googleButton.innerHTML = originalContent;
-                  
-                  // Mostrar mensagem de erro
-                  showError('Erro ao entrar com Google: ' + error.message);
-                });
-            }
+            // Marcar que um login está em andamento
+            sessionStorage.setItem('authInProgress', 'true');
+            
+            firebase.auth().signInWithPopup(provider)
+              .then((result) => {
+                // Login bem-sucedido
+                const user = result.user;
+                console.log('Login com Google bem-sucedido:', user.uid);
+                
+                // Verificar se é um novo usuário
+                const isNewUser = result.additionalUserInfo.isNewUser;
+                if (isNewUser) {
+                  console.log("Novo usuário detectado, criando dados iniciais");
+                  // Criar dados iniciais do usuário
+                  createUserData(user.uid);
+                }
+                
+                // Definir flags para controlar redirecionamento
+                sessionStorage.setItem('loginJustCompleted', 'true');
+                sessionStorage.setItem('lastRedirect', Date.now().toString());
+                sessionStorage.setItem('authState', 'authenticated');
+                
+                // Redirecionar para a página principal
+                window.location.href = './app.html';
+              })
+              .catch((error) => {
+                console.error('Erro de login com Google:', error);
+                
+                // Limpar flag de autenticação em andamento
+                sessionStorage.removeItem('authInProgress');
+                
+                // Restaurar botão
+                googleButton.disabled = false;
+                googleButton.innerHTML = originalContent;
+                
+                // Mostrar mensagem de erro
+                showError('Erro ao entrar com Google: ' + error.message);
+              });
           });
         }
         
@@ -363,49 +245,55 @@
             const originalContent = registerButton.innerHTML;
             registerButton.innerHTML = '<div class="login-button-spinner"></div> Registrando...';
             
-            if (window.authUtils && typeof window.authUtils.registerUser === 'function') {
-              window.authUtils.registerUser(email, password, name);
-            } else {
-              // Implementação fallback
-              firebase.auth().createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                  // Conta criada com sucesso
-                  const user = userCredential.user;
-                  console.log('Usuário registrado com sucesso:', user.uid);
+            // Marcar que um registro está em andamento
+            sessionStorage.setItem('authInProgress', 'true');
+            
+            firebase.auth().createUserWithEmailAndPassword(email, password)
+              .then((userCredential) => {
+                // Conta criada com sucesso
+                const user = userCredential.user;
+                console.log('Usuário registrado com sucesso:', user.uid);
+                
+                // Atualizar o perfil do usuário com o nome
+                return user.updateProfile({
+                  displayName: name
+                }).then(() => {
+                  // Criar dados iniciais do usuário
+                  createUserData(user.uid);
                   
-                  // Atualizar o perfil do usuário com o nome
-                  return user.updateProfile({
-                    displayName: name
-                  }).then(() => {
-                    // Criar dados iniciais do usuário
-                    createUserData(user.uid);
-                    
-                    // Redirecionar para a página principal
-                    window.location.href = './index.html';
-                  });
-                })
-                .catch((error) => {
-                  console.error('Erro ao registrar usuário:', error);
+                  // Definir flags para controlar redirecionamento
+                  sessionStorage.setItem('loginJustCompleted', 'true');
+                  sessionStorage.setItem('lastRedirect', Date.now().toString());
+                  sessionStorage.setItem('authState', 'authenticated');
                   
-                  // Restaurar botão
-                  registerButton.disabled = false;
-                  registerButton.innerHTML = originalContent;
-                  
-                  // Mostrar mensagem de erro apropriada
-                  let errorMessage = 'Erro ao criar conta. Tente novamente.';
-                  
-                  if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'Este email já está em uso. Tente fazer login.';
-                  } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Email inválido. Verifique o formato do email.';
-                  } else if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
-                  }
-                  
-                  // Mostrar mensagem
-                  showError(errorMessage);
+                  // Redirecionar para a página principal
+                  window.location.href = './app.html';
                 });
-            }
+              })
+              .catch((error) => {
+                console.error('Erro ao registrar usuário:', error);
+                
+                // Limpar flag de autenticação em andamento
+                sessionStorage.removeItem('authInProgress');
+                
+                // Restaurar botão
+                registerButton.disabled = false;
+                registerButton.innerHTML = originalContent;
+                
+                // Mostrar mensagem de erro apropriada
+                let errorMessage = 'Erro ao criar conta. Tente novamente.';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                  errorMessage = 'Este email já está em uso. Tente fazer login.';
+                } else if (error.code === 'auth/invalid-email') {
+                  errorMessage = 'Email inválido. Verifique o formato do email.';
+                } else if (error.code === 'auth/weak-password') {
+                  errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
+                }
+                
+                // Mostrar mensagem
+                showError(errorMessage);
+              });
           });
         }
         
@@ -481,5 +369,3 @@
       }
     });
   </script>
-</body>
-</html>

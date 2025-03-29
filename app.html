@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
+  
+  <!-- Meta tags de segurança -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  
+  <!-- PWA elementos -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#3498db">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Mapzy Vox">
+  <link rel="apple-touch-icon" href="./ios/180.png">
+  
+  <link rel="stylesheet" href="./css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Biblioteca Material Icons da Google para ícones -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <!-- Scripts Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  
+  <!-- Scripts da aplicação na ordem correta de dependência -->
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/security.js"></script>
+  <script src="./js/storage-manager.js"></script>
+  <script src="./js/user-auth.js"></script>
+  <script src="./js/register-sw.js"></script>
+</head>
+<body>
+  <!-- Cabeçalho da aplicação -->
+  <header class="app-header">
+    <div class="logo">
+      <h1>Mapzy Vox IA</h1>
+    </div>
+    <div class="user-menu">
+      <div class="user-info">
+        <span id="user-name">Usuário</span>
+        <span id="user-email"></span>
+      </div>
+      <button class="logout-button" id="logout-button">
+        <span class="material-icons">logout</span>
+        Sair
+      </button>
+    </div>
+  </header>
+  
+  <!-- Conteúdo principal da aplicação -->
+  <main class="app-content">
+    <!-- Abas de navegação -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button class="tab active" data-tab="record">
+          <span class="material-icons">mic</span>
+          Gravar
+        </button>
+        <button class="tab" data-tab="history">
+          <span class="material-icons">history</span>
+          Histórico
+        </button>
+        <button class="tab" data-tab="settings">
+          <span class="material-icons">settings</span>
+          Configurações
+        </button>
+      </div>
+    </div>
+    
+    <!-- Conteúdo das abas -->
+    <div class="tab-contents">
+      <!-- Aba de gravação -->
+      <div id="recordTab" class="tab-content active">
+        <div class="record-container">
+          <div class="record-controls">
+            <button id="startRecording" class="btn btn-primary record-btn">
+              <span class="material-icons">mic</span>
+              Iniciar Gravação
+            </button>
+            <button id="stopRecording" class="btn btn-danger record-btn" disabled>
+              <span class="material-icons">stop</span>
+              Parar
+            </button>
+          </div>
+          
+          <div class="record-status">
+            <p id="status">Pronto para gravar. Clique em "Iniciar Gravação".</p>
+            <p id="error" class="error-message" style="display: none;"></p>
+            <div id="recordingTime" class="recording-time" style="display: none;">00:00</div>
+            <div class="audio-player" style="display: none;">
+              <audio id="audioPlayer" controls></audio>
+            </div>
+          </div>
+          
+          <div class="transcription-container">
+            <h3>Transcrição</h3>
+            <div id="transcription" class="transcription-text editable" contenteditable="true"></div>
+            
+            <div class="process-controls">
+              <div class="process-selector">
+                <select id="processType">
+                  <option value="summary">Resumo</option>
+                  <option value="bullets">Tópicos</option>
+                  <option value="analysis">Análise</option>
+                </select>
+              </div>
+              <button id="processText" class="btn btn-secondary" disabled>
+                <span class="material-icons">auto_awesome</span>
+                Processar com IA
+              </button>
+              <button id="copyText" class="btn btn-outline">
+                <span class="material-icons">content_copy</span>
+                Copiar
+              </button>
+              <button id="saveTranscription" class="btn btn-outline">
+                <span class="material-icons">save</span>
+                Salvar
+              </button>
+            </div>
+            
+            <div class="processed-container" style="display: none;">
+              <h3>Texto Processado</h3>
+              <div id="processedText" class="processed-text"></div>
+              <button id="copyProcessed" class="btn btn-outline">
+                <span class="material-icons">content_copy</span>
+                Copiar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Aba de histórico -->
+      <div id="historyTab" class="tab-content">
+        <div class="history-container">
+          <h2>Histórico de Transcrições</h2>
+          <div class="history-list" id="transcriptionsList">
+            <p class="empty-list">Nenhuma transcrição encontrada.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Aba de configurações -->
+      <div id="settingsTab" class="tab-content">
+        <div class="settings-container">
+          <h2>Configurações</h2>
+          
+          <div class="settings-section">
+            <h3>API OpenAI</h3>
+            <p>Para utilizar o processamento de texto com IA, você precisa fornecer sua própria chave API da OpenAI.</p>
+            <div class="input-group">
+              <label for="apiKey">Chave API OpenAI</label>
+              <input type="password" id="apiKey" placeholder="sk-...">
+              <button id="saveApiKey" class="btn btn-primary">Salvar Chave</button>
+            </div>
+            <div class="info-box">
+              <p>Sua chave API é armazenada de forma segura e nunca é compartilhada.</p>
+              <p>Você pode obter uma chave API em <a href="https://platform.openai.com/account/api-keys" target="_blank">platform.openai.com</a></p>
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <h3>Conta</h3>
+            <div class="account-info">
+              <p>Logado como: <span id="accountEmail">-</span></p>
+              <button id="logoutBtn" class="btn btn-outline">Sair</button>
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <h3>Sobre</h3>
+            <p>Mapzy Vox IA v1.0.0</p>
+            <p>Um aplicativo para transcrição e processamento de áudio usando inteligência artificial.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <!-- Notificação de instalação de PWA -->
+  <div id="pwaInstallPrompt" class="pwa-prompt" style="display: none;">
+    <div class="prompt-content">
+      <div class="prompt-icon">
+        <span class="material-icons">get_app</span>
+      </div>
+      <div class="prompt-text">
+        <h3>Instalar Aplicativo</h3>
+        <p>Instale o Mapzy Vox IA para acesso offline e experiência otimizada.</p>
+      </div>
+      <div class="prompt-buttons">
+        <button id="installButton" class="btn btn-primary">Instalar</button>
+        <button id="dismissButton" class="btn btn-outline">Agora não</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts da aplicação -->
+  <script src="./js/app.js"></script>
+  <script src="./js/audio-recorder.js"></script>
+  <script src="./js/transcription.js"></script>
+  <script src="./js/ui-controller.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Verificar autenticação primeiro e evitar loops
+      if (window.authCheckInProgress !== true) {
+        window.authUtils.checkAuthState((user) => {
+          if (!user) {
+            console.log("Não autenticado, redirecionando para login.html");
+            return; // user-auth.js fará o redirecionamento
+          }
+          
+          console.log("Usuário autenticado, inicializando aplicação");
+          
+          // Atualizar informações do usuário na interface
+          window.authUtils.updateUserInfo(user);
+          
+          // Configurar evento para o botão de logout
+          const logoutBtn = document.getElementById('logout-button');
+          if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+              window.authUtils.logout();
+            });
+          }
+          
+          // Atualizar email na seção de configurações
+          const accountEmail = document.getElementById('accountEmail');
+          if (accountEmail) {
+            accountEmail.textContent = user.email || 'Não disponível';
+          }
+          
+          const logoutBtnSettings = document.getElementById('logoutBtn');
+          if (logoutBtnSettings) {
+            logoutBtnSettings.addEventListener('click', () => {
+              window.authUtils.logout();
+            });
+          }
+          
+          // Inicializar UI
+          if (window.uiController && typeof window.uiController.initUI === 'function') {
+            window.uiController.initUI();
+          } else {
+            // Fallback básico para a inicialização da UI
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+              tab.addEventListener('click', () => {
+                // Remover classe ativa de todas as abas
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Adicionar classe ativa à aba clicada
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId + 'Tab').classList.add('active');
+                
+                // Se a aba for histórico, carregar transcrições
+                if (tabId === 'history') {
+                  loadTranscriptions();
+                }
+              });
+            });
+          }
+          
+          // Função básica para carregar transcrições se o módulo não estiver disponível
+          function loadTranscriptions() {
+            if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
+              window.transcriptionUtils.loadTranscriptionsList();
+            } else {
+              console.warn('Módulo de transcrição não disponível para carregar histórico');
+              const transcriptionsList = document.getElementById('transcriptionsList');
+              if (transcriptionsList) {
+                transcriptionsList.innerHTML = '<p class="empty-list">Histórico de transcrições não disponível no momento.</p>';
+              }
+            }
+          }
+        });
+      } else {
+        console.log("Verificação de autenticação já em andamento, aguardando...");
+      }
+    });
+  </script>
+</body>
+</html>
