@@ -3,193 +3,164 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapzy Vox IA - Página Inicial</title>
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-  <meta name="theme-color" content="#3498db">
+  <title>Mapzy Vox IA - Assistente Inteligente de Transcrição</title>
+  <meta name="theme-color" content="#4361ee">
   <link rel="manifest" href="./manifest.json">
+  
+  <!-- Estilos -->
   <link rel="stylesheet" href="./css/styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <style>
-    .splash {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      font-family: 'Roboto', sans-serif;
-      background-color: #f4f4f4;
-      color: #2c3e50;
-    }
-    .splash h1 {
-      font-size: 2rem;
-      font-weight: bold;
-    }
-    .splash p {
-      margin-top: 1rem;
-      font-size: 1.1rem;
-    }
-    .hidden { display: none; }
-  </style>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="./js/firebase-config.js"></script>
-  <script src="./js/security.js"></script>
-  <script src="./js/storage-manager.js"></script>
-  <script src="./js/user-auth.js"></script>
-  <script src="./js/transcription.js"></script>
-  <script src="./js/audio-recorder.js"></script>
-  <script src="./js/ui-controller.js"></script>
+  
+  <!-- Scripts Locais -->
+  <script src="./js/firebase-config.js" defer></script>
   <script src="./js/app.js" defer></script>
-  <script src="./js/register-sw.js" defer></script>
-  <script src="./js/diagnostico.js" defer></script>
 </head>
 <body>
-  <div id="splash" class="splash">
-    <h1>MapzyVox IA</h1>
-    <p id="status-text">Carregando aplicação...</p>
+  <!-- Tela de Carregamento -->
+  <div class="splash-screen">
+    <div class="spinner"></div>
+    <h1>Mapzy Vox IA</h1>
+    <p>Inicializando ambiente seguro...</p>
   </div>
 
+  <!-- Aplicação Principal -->
   <div id="app" class="hidden">
-    <header class="header">
-      <h1>MapzyVox IA</h1>
-      <button id="logout-button" class="btn btn-secondary">Sair</button>
-    </header>
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="user-panel">
+        <img src="" alt="Foto do usuário" class="user-avatar" id="user-photo">
+        <div class="user-info">
+          <h2 class="user-name" id="user-name">Usuário</h2>
+          <p class="user-email" id="user-email">usuario@email.com</p>
+        </div>
+      </div>
 
+      <nav class="main-nav">
+        <ul class="nav-list">
+          <li>
+            <a href="#dashboard" class="nav-link active">
+              <i class="material-icons-round">dashboard</i>
+              Dashboard
+            </a>
+          </li>
+          <li>
+            <a href="#recorder" class="nav-link">
+              <i class="material-icons-round">mic</i>
+              Nova Gravação
+            </a>
+          </li>
+          <li>
+            <a href="#history" class="nav-link">
+              <i class="material-icons-round">history</i>
+              Histórico
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <footer class="sidebar-footer">
+        <button id="logout-btn" class="btn-logout">
+          <i class="material-icons-round">logout</i>
+          Sair
+        </button>
+        <div class="app-version">v2.0.0</div>
+      </footer>
+    </aside>
+
+    <!-- Conteúdo Principal -->
     <main class="main-content">
-      <section class="user-info">
-        <p>Olá, <span id="user-name">usuário</span>!</p>
+      <!-- Header -->
+      <header class="content-header">
+        <h1 id="page-title">Dashboard</h1>
+        <button class="btn-new-recording">
+          <i class="material-icons-round">mic</i>
+          Nova Gravação
+        </button>
+      </header>
+
+      <!-- Seção de Gravação -->
+      <section class="recording-section">
+        <div class="recording-card">
+          <div class="waveform-container" id="waveform"></div>
+          
+          <div class="recording-controls">
+            <button id="start-recording" class="btn-record">
+              <i class="material-icons-round">fiber_manual_record</i>
+            </button>
+            <div class="recording-timer">00:00</div>
+            <button id="stop-recording" class="btn-stop" disabled>
+              <i class="material-icons-round">stop</i>
+            </button>
+          </div>
+        </div>
       </section>
 
-      <section class="recorder">
-        <h2>Nova Gravação</h2>
-        <button id="start-recording" class="btn btn-primary">Gravar</button>
-        <button id="stop-recording" class="btn btn-secondary" disabled>Parar</button>
+      <!-- Editor de Transcrição -->
+      <section class="editor-section">
+        <div class="editor-container">
+          <div class="editor-header">
+            <h2>Transcrição em Tempo Real</h2>
+            <div class="language-selector">
+              <i class="material-icons-round">translate</i>
+              <select id="language-select">
+                <option value="pt-BR">Português (BR)</option>
+                <option value="en-US">Inglês (EUA)</option>
+                <option value="es-ES">Espanhol (ES)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="transcription-editor" 
+               contenteditable="true" 
+               data-placeholder="Fale ou cole seu texto aqui...">
+          </div>
+        </div>
       </section>
 
-      <section class="transcription">
-        <h2>Transcrição</h2>
-        <textarea id="transcription-text" rows="10" placeholder="A transcrição aparecerá aqui..."></textarea>
-        <button id="process-text" class="btn btn-outline">Enviar para processamento com IA</button>
-      </section>
+      <!-- Processamento por IA -->
+      <section class="ai-processing-section">
+        <div class="ai-actions">
+          <button class="btn-ai-process" id="process-text">
+            <i class="material-icons-round">auto_awesome</i>
+            Processar com IA
+          </button>
+          
+          <div class="ai-options">
+            <button class="ai-option" data-action="summarize">
+              <i class="material-icons-round">summarize</i>
+              Resumir
+            </button>
+            <button class="ai-option" data-action="translate">
+              <i class="material-icons-round">translate</i>
+              Traduzir
+            </button>
+            <button class="ai-option" data-action="improve">
+              <i class="material-icons-round">auto_fix_high</i>
+              Melhorar Texto
+            </button>
+          </div>
+        </div>
 
-      <section class="history">
-        <h2>Histórico de Gravações</h2>
-        <ul id="recording-history"></ul>
+        <div class="ai-output" 
+             contenteditable="true"
+             data-placeholder="Resultado do processamento aparecerá aqui...">
+        </div>
       </section>
     </main>
   </div>
 
-  <script>
-    const splash = document.getElementById('splash');
-    const app = document.getElementById('app');
-    const statusText = document.getElementById('status-text');
+  <!-- Notificações -->
+  <div class="notification-center"></div>
 
-    function showApp() {
-      console.log('Mostrando aplicação...');
-      splash.classList.add('hidden');
-      app.classList.remove('hidden');
-    }
-
-    function initApp() {
-      console.log('Iniciando verificação de autenticação...');
-      firebase.auth().onAuthStateChanged((user) => {
-        console.log("Estado de autenticação:", user ? "Logado como " + (user.email || user.uid) : "Não logado");
-        if (user) {
-          console.log('Usuário autenticado, configurando interface...');
-          document.getElementById('user-name').textContent = user.displayName || user.email || "Usuário";
-          window.userId = user.uid;
-          
-          try {
-            console.log('Carregando histórico do usuário...');
-            if (typeof loadUserHistory === 'function') {
-              loadUserHistory(user.uid);
-            } else {
-              console.warn('Função loadUserHistory não encontrada');
-            }
-          } catch (error) {
-            console.error('Erro ao carregar histórico:', error);
-          }
-          
-          console.log('Mostrando a aplicação...');
-          showApp();
-        } else {
-          console.log('Usuário não autenticado, redirecionando para login...');
-          window.location.href = './login.html';
-        }
-      });
-    }
-
-    function loadUserHistory(userId) {
-      console.log('Carregando histórico para userId:', userId);
-      // Tentativa de usar o transcriptionUtils se disponível
-      if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
-        try {
-          window.transcriptionUtils.loadTranscriptionsList();
-        } catch (error) {
-          console.error('Erro ao carregar lista de transcrições:', error);
-        }
-      } else {
-        console.warn('transcriptionUtils não disponível para carregar histórico');
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log('DOM carregado, inicializando aplicação...');
-      
-      const timeoutFallback = new Promise(resolve => setTimeout(resolve, 1500));
-
-      Promise.race([
-        new Promise(resolve => {
-          if ('serviceWorker' in navigator) {
-            console.log('Aguardando Service Worker...');
-            navigator.serviceWorker.ready.then(resolve);
-          } else {
-            console.log('Service Worker não suportado');
-            resolve();
-          }
-        }),
-        timeoutFallback
-      ]).then(() => {
-        console.log('Iniciando app após carregamento de Service Worker ou timeout');
-        initApp();
-      });
-
-      document.getElementById("logout-button").addEventListener("click", () => {
-        console.log('Botão de logout clicado');
-        firebase.auth().signOut().then(() => {
-          window.location.href = './login.html';
-        });
-      });
-
-      document.getElementById("start-recording").addEventListener("click", () => {
-        if (typeof startRecording === 'function') {
-          startRecording();
-        } else {
-          console.error('Função startRecording não encontrada');
-        }
-      });
-      
-      document.getElementById("stop-recording").addEventListener("click", () => {
-        if (typeof stopRecording === 'function') {
-          stopRecording();
-        } else {
-          console.error('Função stopRecording não encontrada');
-        }
-      });
-      
-      document.getElementById("process-text").addEventListener("click", () => {
-        const text = document.getElementById("transcription-text").value;
-        if (text.trim()) {
-          if (typeof processTranscription === 'function') {
-            processTranscription(text);
-          } else {
-            console.error('Função processTranscription não encontrada');
-          }
-        }
-      });
-    });
-  </script>
+  <!-- Scripts -->
+  <script src="./js/audio-recorder.js" defer></script>
+  <script src="./js/transcription-manager.js" defer></script>
+  <script src="./js/ui-manager.js" defer></script>
 </body>
 </html>
