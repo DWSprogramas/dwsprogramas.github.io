@@ -1,6 +1,4 @@
 // Inicializar a interface de usuário
-// Inicializar a interface de usuário
-// Inicializar a interface de usuário
 function initUI() {
     console.log("Inicializando UI...");
     
@@ -45,6 +43,31 @@ function initUI() {
     checkApiKeyAndEnableRecording();
 }
 
+// Função para verificar se a chave API já está disponível e habilitar botões se for o caso
+function checkApiKeyAndEnableRecording() {
+    // Tentar obter a chave API diretamente do localStorage como fallback
+    const apiKey = localStorage.getItem('openai_api_key');
+    
+    if (apiKey && apiKey.startsWith('sk-')) {
+        console.log("Chave API válida encontrada, habilitando botão de gravação");
+        
+        // Mostrar a chave no campo de input
+        const apiKeyInput = document.getElementById('apiKey');
+        if (apiKeyInput) {
+            apiKeyInput.value = apiKey;
+        }
+        
+        // Habilitar botão de gravação
+        const startRecordingButton = document.getElementById('startRecording');
+        if (startRecordingButton) {
+            startRecordingButton.disabled = false;
+        }
+    }
+}
+
+
+    
+    
 // Função para mostrar informações do usuário na interface
 function mostrarInfoUsuario() {
     console.log('Verificando usuário para mostrar informações...');
@@ -206,7 +229,7 @@ function setupPWAInstall() {
 }
 
 // Em ui-controller.js
- function loadTranscriptionsList() {
+function loadTranscriptionsList() {
   // Chamar a implementação do módulo de transcrição
   if (window.transcriptionUtils && window.transcriptionUtils.loadTranscriptionsList) {
     window.transcriptionUtils.loadTranscriptionsList();
@@ -214,7 +237,6 @@ function setupPWAInstall() {
     console.error('Módulo de transcrição não disponível');
   }
 }
-
 
 // Manipulador para o botão de salvar chave API
 function handleSaveApiKey() {
@@ -238,14 +260,23 @@ function handleSaveApiKey() {
     saveButton.disabled = true;
     
     // Primeiro salvar localmente
-    if (window.storageUtils && typeof window.storageUtils.saveApiKeyLocally === 'function') {
-        window.storageUtils.saveApiKeyLocally(apiKey);
-        console.log("Chave API salva localmente");
-    } else {
-        console.warn("storageUtils não disponível para salvar localmente");
+    try {
         // Fallback para localStorage direto
         localStorage.setItem('openai_api_key', apiKey);
+        console.log("Chave API salva no localStorage");
+    } catch (err) {
+        console.warn("Erro ao salvar no localStorage:", err);
     }
+    
+    // Também tenta usar o storageUtils se disponível
+    if (window.storageUtils && typeof window.storageUtils.saveApiKeyLocally === 'function') {
+        try {
+            window.storageUtils.saveApiKeyLocally(apiKey);
+            console.log("Chave API salva via storageUtils");
+        } catch (err) {
+            console.warn("Erro ao salvar via storageUtils:", err);
+        }
+    } 
     
     // Tentar salvar no Firebase
     if (window.firebaseHelper && typeof window.firebaseHelper.saveUserApiKey === 'function') {
@@ -286,38 +317,10 @@ function handleSaveApiKey() {
     }
 }
 
-// Função para verificar se a chave API já está disponível e habilitar botões se for o caso
-function checkApiKeyAndEnableRecording() {
-    if (window.storageUtils && typeof window.storageUtils.getApiKey === 'function') {
-        const apiKey = window.storageUtils.getApiKey();
-        
-        if (apiKey && apiKey.startsWith('sk-')) {
-            console.log("Chave API válida encontrada, habilitando botão de gravação");
-            
-            // Mostrar a chave no campo de input
-            const apiKeyInput = document.getElementById('apiKey');
-            if (apiKeyInput) {
-                apiKeyInput.value = apiKey;
-            }
-            
-            // Habilitar botão de gravação
-            const startRecordingButton = document.getElementById('startRecording');
-            if (startRecordingButton) {
-                startRecordingButton.disabled = false;
-            }
-        }
-    }
-}
-
 // Atualizar status
 function updateStatus(message, isError = false) {
     const statusDiv = document.getElementById('status');
     const errorDiv = document.getElementById('error');
-    
-    if (!statusDiv || !errorDiv) {
-        console.error("Elementos de status não encontrados no DOM");
-        return;
-    }
     
     if (isError) {
         errorDiv.textContent = message;
@@ -327,18 +330,9 @@ function updateStatus(message, isError = false) {
         statusDiv.textContent = message;
         errorDiv.style.display = 'none';
     }
-    
-    // Adicionar um pequeno efeito visual
-    statusDiv.style.animation = 'highlight 1s ease';
-    setTimeout(() => {
-        statusDiv.style.animation = '';
-    }, 1000);
 }
 
 // Mostrar erro
 function showError(message) {
-    console.error("Erro:", message);
     updateStatus(message, true);
 }
-
-
