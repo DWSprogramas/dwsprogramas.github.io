@@ -46,10 +46,10 @@ function initUI() {
 // Função para verificar se a chave API já está disponível e habilitar botões se for o caso
 function checkApiKeyAndEnableRecording() {
     // Tentar obter a chave API diretamente do localStorage como fallback
-    const apiKey = localStorage.getItem('openai_api_key');
+    let apiKey = localStorage.getItem('openai_api_key');
     
-    if (apiKey && apiKey.startsWith('sk-')) {
-        console.log("Chave API válida encontrada, habilitando botão de gravação");
+    if (apiKey) {
+        console.log("Chave API encontrada, habilitando botão de gravação");
         
         // Mostrar a chave no campo de input
         const apiKeyInput = document.getElementById('apiKey');
@@ -64,7 +64,6 @@ function checkApiKeyAndEnableRecording() {
         }
     }
 }
-
 
     
     
