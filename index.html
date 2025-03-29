@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<!DOCTYPE html>
-<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -57,9 +55,9 @@
     </div>
     
     <div class="tabs">
-      <div class="tab active" data-tab="recorder">Gravador</div>
-      <div class="tab" data-tab="history">Histórico</div>
-      <div class="tab" data-tab="settings">Configurações</div>
+      <a href="#recorder" class="tab active" id="tab-recorder">Gravador</a>
+      <a href="#history" class="tab" id="tab-history">Histórico</a>
+      <a href="#settings" class="tab" id="tab-settings">Configurações</a>
     </div>
     
     <!-- Conteúdo da aba do gravador -->
@@ -218,120 +216,125 @@
       }
     });
   </script>
+  
   <script src="js/api-key-fix.js"></script>
+  
   <script>
-// Script para corrigir a navegação por abas
-(function() {
-  console.log("Inicializando correção das abas...");
-  
-  // Seletores dos elementos
-  const tabs = document.querySelectorAll('.tab');
-  const tabContents = document.querySelectorAll('.tab-content');
-  
-  console.log("Abas encontradas:", tabs.length);
-  console.log("Conteúdos de abas encontrados:", tabContents.length);
-  
-  // Remover manipuladores de eventos existentes
-  tabs.forEach(tab => {
-    // Clonar e substituir para remover todos os manipuladores
-    const newTab = tab.cloneNode(true);
-    tab.parentNode.replaceChild(newTab, tab);
-    
-    // Adicionar novo manipulador diretamente
-    newTab.addEventListener('click', function() {
-      console.log("Clique na aba:", this.getAttribute('data-tab'));
-      
-      // Remover classe ativa de todas as abas
-      tabs.forEach(t => t.classList.remove('active'));
-      tabContents.forEach(c => c.classList.remove('active'));
-      
-      // Adicionar classe ativa à aba clicada
-      this.classList.add('active');
-      const tabId = this.getAttribute('data-tab');
-      const contentElement = document.getElementById(tabId + 'Tab');
-      
-      if (contentElement) {
-        contentElement.classList.add('active');
-        console.log("Conteúdo ativado:", tabId + 'Tab');
+    // Script para controle de abas via URL
+    (function() {
+      function showTab(tabId) {
+        console.log("Mostrando aba:", tabId);
         
-        // Se for a aba de histórico, carregar transcrições
+        // Esconder todas as abas
+        document.querySelectorAll('.tab-content').forEach(function(tab) {
+          tab.style.display = 'none';
+        });
+        
+        // Mostrar apenas a aba selecionada
+        var selectedTab = document.getElementById(tabId + 'Tab');
+        if (selectedTab) {
+          selectedTab.style.display = 'block';
+        }
+        
+        // Atualizar as classes ativas
+        document.querySelectorAll('.tab').forEach(function(tab) {
+          tab.classList.remove('active');
+        });
+        
+        document.getElementById('tab-' + tabId).classList.add('active');
+        
+        // Carregar conteúdo específico
         if (tabId === 'history') {
-          console.log("Carregando histórico de transcrições...");
-          if (window.transcriptionUtils && typeof window.transcriptionUtils.loadTranscriptionsList === 'function') {
-            window.transcriptionUtils.loadTranscriptionsList();
-          } else {
-            console.warn("Função loadTranscriptionsList não encontrada");
-            // Tentar carregar diretamente
-            loadTranscriptionsDirectly();
-          }
+          loadTranscriptions();
         }
-      } else {
-        console.error("Elemento de conteúdo não encontrado:", tabId + 'Tab');
       }
-    });
-  });
-  
-  // Função para carregar transcrições diretamente se a função normal não estiver disponível
-  function loadTranscriptionsDirectly() {
-    if (!firebase || !firebase.auth) return;
-    
-    const user = firebase.auth().currentUser;
-    if (!user) return;
-    
-    const transcriptionList = document.getElementById('transcriptionList');
-    const noTranscriptions = document.getElementById('noTranscriptions');
-    
-    if (!transcriptionList) return;
-    
-    // Tentar o caminho direto primeiro
-    let dbRef = firebase.database().ref(`users/${user.uid}/transcriptions`);
-    
-    dbRef.once('value')
-      .then(snapshot => {
-        if (!snapshot.exists()) {
-          // Se não encontrar, tentar o caminho alternativo
-          dbRef = firebase.database().ref(`MapzyVox/users/${user.uid}/transcriptions`);
-          return dbRef.once('value');
-        }
-        return snapshot;
-      })
-      .then(snapshot => {
-        transcriptionList.innerHTML = '';
+      
+      function loadTranscriptions() {
+        console.log("Carregando transcrições...");
         
-        if (!snapshot.exists() || snapshot.numChildren() === 0) {
-          if (noTranscriptions) noTranscriptions.style.display = 'block';
+        if (!window.firebase || !firebase.auth || !firebase.database) {
+          console.error("Firebase não disponível");
           return;
         }
         
-        if (noTranscriptions) noTranscriptions.style.display = 'none';
+        const user = firebase.auth().currentUser;
+        if (!user) {
+          console.error("Usuário não autenticado");
+          return;
+        }
         
-        // Converter para array e ordenar por data
-        const transcriptions = [];
-        snapshot.forEach(childSnapshot => {
-          transcriptions.push({
-            id: childSnapshot.key,
-            ...childSnapshot.val()
+        const transcriptionList = document.getElementById('transcriptionList');
+        if (!transcriptionList) return;
+        
+        transcriptionList.innerHTML = '<li>Carregando transcrições...</li>';
+        
+        // Tentar carregar de ambos os caminhos possíveis
+        firebase.database().ref(`users/${user.uid}/transcriptions`).once('value')
+          .then(snapshot => {
+            if (!snapshot.exists()) {
+              return firebase.database().ref(`MapzyVox/users/${user.uid}/transcriptions`).once('value');
+            }
+            return snapshot;
+          })
+          .then(snapshot => {
+            if (!snapshot.exists() || snapshot.numChildren() === 0) {
+              transcriptionList.innerHTML = '<li>Nenhuma transcrição encontrada</li>';
+              return;
+            }
+            
+            const transcriptions = [];
+            snapshot.forEach(childSnapshot => {
+              transcriptions.push({
+                id: childSnapshot.key,
+                ...childSnapshot.val()
+              });
+            });
+            
+            transcriptionList.innerHTML = '';
+            
+            // Ordenar e mostrar
+            transcriptions
+              .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+              .forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'transcription-item';
+                li.innerHTML = `
+                  <div class="transcription-title">${item.title || 'Sem título'}</div>
+                  <div class="transcription-date">${new Date(item.createdAt || 0).toLocaleString()}</div>
+                  <div class="transcription-content">${item.text ? item.text.substring(0, 100) + (item.text.length > 100 ? '...' : '') : ''}</div>
+                `;
+                transcriptionList.appendChild(li);
+              });
+          })
+          .catch(error => {
+            console.error("Erro ao carregar transcrições:", error);
+            transcriptionList.innerHTML = '<li>Erro ao carregar transcrições</li>';
           });
+      }
+      
+      // Verificar a URL e mostrar a aba correta
+      function checkHash() {
+        const hash = window.location.hash;
+        if (hash) {
+          const tabId = hash.substring(1);
+          showTab(tabId);
+        } else {
+          showTab('recorder');
+        }
+      }
+      
+      // Adicionar manipuladores de eventos
+      window.addEventListener('load', checkHash);
+      window.addEventListener('hashchange', checkHash);
+      
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function(e) {
+          const tabId = this.getAttribute('href').substring(1);
+          showTab(tabId);
+          e.preventDefault();
         });
-        
-        // Ordenar por data (mais recentes primeiro)
-        transcriptions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        
-        // Criar elemento para cada transcrição
-        transcriptions.forEach(item => {
-          const li = document.createElement('li');
-          li.className = 'transcription-item';
-          
-          const title = item.title || 'Transcrição sem título';
-          const date = item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Data desconhecida';
-          const text = item.text || '';
-          const preview = text.substring(0, 100) + (text.length > 100 ? '...' : '');
-          
-          li.innerHTML = `
-            <div class="transcription-title">${title}</div>
-            <div class="transcription-date">${date}</div>
-            <div class="transcription-content">${preview}</div>
-            <div class="transcription-controls">
-              <button class="view-btn" data-i
+      });
+    })();
+  </script>
 </body>
 </html>
