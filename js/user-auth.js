@@ -4,105 +4,24 @@
 function checkAuthState(callback) {
   console.log("Verificando estado de autenticação...");
   
-  // Evitar verificações de autenticação duplicadas
-  if (window.authCheckInProgress === true) {
-    console.log("Verificação de autenticação já em andamento, ignorando...");
-    return;
-  }
-  
-  // Marcar que uma verificação está em andamento
-  window.authCheckInProgress = true;
-  
-  // Verificar se estamos na página de login ou na página principal
-  const isLoginPage = window.location.pathname.includes('login.html');
-  const isIndexPage = window.location.pathname.endsWith('index.html') || 
-                      window.location.pathname.endsWith('/') || 
-                      window.location.pathname.endsWith('/mapzyvox/');
-  
-  console.log("Página atual:", isLoginPage ? "login" : isIndexPage ? "index" : "outra");
-  
-  // Se estamos em uma página intermediária (splash), aguardar e não redirecionar
-  if (!isLoginPage && !isIndexPage) {
-    console.log("Em página intermediária, apenas executando callback sem redirecionamento");
-    window.authCheckInProgress = false;
-    if (callback) callback(null);
-    return;
-  }
-  
-  // Armazenar a última vez que verificamos para evitar verificações muito frequentes
-  const lastAuthCheck = parseInt(sessionStorage.getItem('lastAuthCheck') || '0');
-  const now = Date.now();
-  
-  // Se verificamos recentemente (menos de 2 segundos atrás), podemos evitar outra verificação
-  if (now - lastAuthCheck < 2000) {
-    console.log("Verificação recente de autenticação, usando resultado em cache");
-    window.authCheckInProgress = false;
-    
-    // Verificar se temos um estado de autenticação em cache
-    const cachedAuthState = sessionStorage.getItem('authState');
-    if (cachedAuthState) {
-      const user = cachedAuthState === 'authenticated' ? { uid: 'cached' } : null;
-      if (callback) callback(user);
-      return;
-    }
-  }
-  
-  // Armazenar timestamp da verificação
-  sessionStorage.setItem('lastAuthCheck', now.toString());
-  
-  // Verificar se o Firebase está disponível
-  if (typeof firebase === 'undefined' || !firebase.auth) {
-    console.error("Firebase Auth não disponível");
-    window.authCheckInProgress = false;
-    if (callback) callback(null);
-    return;
-  }
-  
-  // Adicionar um timeout para garantir que não ficaremos presos
-  const authTimeout = setTimeout(() => {
-    console.warn("Timeout na verificação de autenticação");
-    window.authCheckInProgress = false;
-    if (callback) callback(null);
-  }, 5000);
-  
   firebase.auth().onAuthStateChanged((user) => {
-    clearTimeout(authTimeout);
     console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
     
-    // Armazenar o estado de autenticação em cache
-    sessionStorage.setItem('authState', user ? 'authenticated' : 'unauthenticated');
-    
-    // Verificar redirecionamentos necessários
-    if (!user && !isLoginPage) {
-      // Não estamos logados e não estamos na página de login
+    // Se estiver em uma página que requer autenticação e não houver usuário autenticado
+    if (!user && !window.location.pathname.includes('login.html')) {
       console.log("Redirecionando para a página de login...");
-      window.authCheckInProgress = false;
       window.location.href = './login.html';
-      return;
     }
     
-    if (user && isLoginPage) {
-      // Estamos logados e estamos na página de login
-      console.log("Redirecionando para a página principal...");
-      window.authCheckInProgress = false;
-      window.location.href = './app.html'; // Usar página app.html em vez de index.html
-      return;
+    // Se estiver na página de login e houver usuário autenticado
+    if (user && window.location.pathname.includes('login.html')) {
+      console.log("Usuário já autenticado. Redirecionando para a página principal...");
+      window.location.href = './index.html';
     }
     
-    // Se chegamos aqui, não é necessário redirecionamento
-    window.authCheckInProgress = false;
-    
-    // Atualizar UI se necessário
-    updateUserInfo(user);
-    
-    // Executar callback
-    if (callback) callback(user);
-  }, (error) => {
-    // Tratar erro de verificação de autenticação
-    console.error("Erro ao verificar autenticação:", error);
-    clearTimeout(authTimeout);
-    window.authCheckInProgress = false;
-    if (callback) callback(null);
+    if (callback) {
+      callback(user);
+    }
   });
 }
 
@@ -151,10 +70,6 @@ function loadUserData(userId) {
 
 // Logout do usuário
 function logout() {
-  // Limpar cache de autenticação
-  sessionStorage.removeItem('authState');
-  sessionStorage.removeItem('lastAuthCheck');
-  
   firebase.auth().signOut()
     .then(() => {
       console.log('Usuário deslogado com sucesso');
@@ -176,13 +91,11 @@ function loginWithEmail(email, password) {
     loginButton.disabled = true;
   }
   
-  return firebase.auth().signInWithEmailAndPassword(email, password)
+  firebase.auth().signInWithEmailAndPassword(email, password)
     .then((userCredential) => {
       // Login bem-sucedido
       console.log('Login com email bem-sucedido:', userCredential.user.uid);
-      // O redirecionamento será feito pelo onAuthStateChanged
-      sessionStorage.setItem('authState', 'authenticated');
-      return userCredential;
+      window.location.href = './index.html';
     })
     .catch((error) => {
       console.error('Erro de login com email:', error);
@@ -208,7 +121,6 @@ function loginWithEmail(email, password) {
       
       // Mostrar mensagem
       showError(errorMessage);
-      throw error;
     });
 }
 
@@ -224,7 +136,7 @@ function loginWithGoogle() {
     googleButton.disabled = true;
   }
   
-  return firebase.auth().signInWithPopup(provider)
+  firebase.auth().signInWithPopup(provider)
     .then((result) => {
       // Login bem-sucedido
       const user = result.user;
@@ -234,12 +146,11 @@ function loginWithGoogle() {
       const isNewUser = result.additionalUserInfo.isNewUser;
       if (isNewUser) {
         // Criar dados iniciais do usuário
-        return createUserData(user.uid).then(() => result);
+        createUserData(user.uid);
       }
       
-      // O redirecionamento será feito pelo onAuthStateChanged
-      sessionStorage.setItem('authState', 'authenticated');
-      return result;
+      // Redirecionar para a página principal
+      window.location.href = './index.html';
     })
     .catch((error) => {
       console.error('Erro de login com Google:', error);
@@ -252,7 +163,6 @@ function loginWithGoogle() {
       
       // Mostrar mensagem de erro
       showError('Erro ao entrar com Google: ' + error.message);
-      throw error;
     });
 }
 
@@ -266,7 +176,7 @@ function registerUser(email, password, name) {
     registerButton.disabled = true;
   }
   
-  return firebase.auth().createUserWithEmailAndPassword(email, password)
+  firebase.auth().createUserWithEmailAndPassword(email, password)
     .then((userCredential) => {
       // Conta criada com sucesso
       const user = userCredential.user;
@@ -277,11 +187,10 @@ function registerUser(email, password, name) {
         displayName: name
       }).then(() => {
         // Criar dados iniciais do usuário
-        return createUserData(user.uid).then(() => {
-          // O redirecionamento será feito pelo onAuthStateChanged
-          sessionStorage.setItem('authState', 'authenticated');
-          return userCredential;
-        });
+        createUserData(user.uid);
+        
+        // Redirecionar para a página principal
+        window.location.href = './index.html';
       });
     })
     .catch((error) => {
@@ -306,7 +215,6 @@ function registerUser(email, password, name) {
       
       // Mostrar mensagem
       showError(errorMessage);
-      throw error;
     });
 }
 

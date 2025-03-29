@@ -3,20 +3,23 @@
  * Responsável pelo comportamento offline e atualizações do PWA
  */
 
-// Determinar o caminho base do aplicativo
-const BASE_PATH = '';
+// Caminho absoluto para o service worker
+const serviceWorkerPath = new URL('service-worker.js', window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1)).href;
 
 // Configuração e registro do Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     console.log('Tentando registrar o Service Worker...');
     
-    // Usar o caminho correto dependendo do ambiente
-    let swPath = `/service-worker.js`;
-
+    // Usar registro com HTTPS ou caminho relativo dependendo do ambiente
+    let swPath = './service-worker.js';
+    // Se estamos em um servidor em produção (não localhost), forçar caminho absoluto com HTTPS
+    if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+      swPath = serviceWorkerPath.replace('http:', 'https:');
+    }
     
     // Registrar o service worker
-    navigator.serviceWorker.register(swPath, { scope: '/' })
+    navigator.serviceWorker.register(swPath, { scope: './' })
       .then(registration => {
         console.log('Service Worker registrado com sucesso!', registration.scope);
         
@@ -25,11 +28,15 @@ if ('serviceWorker' in navigator) {
       })
       .catch(error => {
         console.error('Erro ao registrar Service Worker:', error);
-        // Tentar novamente com caminho relativo se o primeiro falhar
-        console.log('Tentando novamente com caminho relativo...');
-        navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('Service Worker registrado com caminho relativo:', reg.scope))
-          .catch(err => console.error('Falha definitiva ao registrar Service Worker:', err));
+        // Tentar novamente com caminho relativo se o erro foi relacionado a HTTPS
+        if (swPath !== './service-worker.js' && error.message && 
+            (error.message.includes('SSL') || error.message.includes('HTTPS') || 
+             error.message.includes('secure') || error.message.includes('mixed content'))) {
+          console.log('Tentando novamente com caminho relativo...');
+          navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+            .then(reg => console.log('Service Worker registrado com caminho relativo:', reg.scope))
+            .catch(err => console.error('Falha definitiva ao registrar Service Worker:', err));
+        }
       });
     
     // Configurar eventos de online/offline e instalação
