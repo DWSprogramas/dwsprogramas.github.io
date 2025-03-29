@@ -4,21 +4,33 @@
 function checkAuthState(callback) {
   console.log("Verificando estado de autenticação...");
   
+  // Adicionar uma flag para prevenir redirecionamentos durante a inicialização
+  window.authCheckInProgress = true;
+  
   firebase.auth().onAuthStateChanged((user) => {
     console.log("Estado de autenticação:", user ? "Usuário autenticado" : "Usuário não autenticado");
     
+    // Evita redirecionamentos se estiver em uma página de login durante o carregamento
+    const isLoginPage = window.location.pathname.includes('login.html');
+    
     // Se estiver em uma página que requer autenticação e não houver usuário autenticado
-    if (!user && !window.location.pathname.includes('login.html')) {
+    if (!user && !isLoginPage) {
       console.log("Redirecionando para a página de login...");
       window.location.href = './login.html';
+      return; // Importante: para a execução aqui para evitar processamento adicional
     }
     
     // Se estiver na página de login e houver usuário autenticado
-    if (user && window.location.pathname.includes('login.html')) {
+    if (user && isLoginPage) {
       console.log("Usuário já autenticado. Redirecionando para a página principal...");
       window.location.href = './index.html';
+      return; // Importante: para a execução aqui para evitar processamento adicional
     }
     
+    // Remover a flag após completar a verificação
+    window.authCheckInProgress = false;
+    
+    // Executar o callback apenas se não houve redirecionamento
     if (callback) {
       callback(user);
     }
