@@ -110,47 +110,133 @@
       <button id="saveTranscriptionBtn" disabled>Salvar Transcrição</button>
     </div>
     
-    <!-- Restante do código permanece igual -->
+   
+   <script>
+(function() {
+  function showTab(tabId) {
+    console.log("Mostrando aba:", tabId);
+    console.log("Elemento da aba:", document.getElementById(tabId + 'Tab'));
     
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        // Mantive o código original de inicialização
-        
-        // Checar a autenticação com modificações
-        if (window.authUtils && typeof window.authUtils.checkAuthState === 'function') {
-          window.authUtils.checkAuthState(function(user) {
-            const loginButton = document.getElementById('loginButton');
-            const logoutButton = document.getElementById('logoutButton');
-            const userNameElement = document.getElementById('userName');
-            const userEmailElement = document.getElementById('userEmail');
-            
-            if (user) {
-              console.log('Usuário autenticado:', user.email);
-              
-              // Atualizar informações do usuário
-              userNameElement.textContent = user.displayName || 'Usuário';
-              userEmailElement.textContent = user.email;
-              
-              // Mostrar botão de logout, ocultar botão de login
-              loginButton.style.display = 'none';
-              logoutButton.style.display = 'flex';
-            } else {
-              console.log('Usuário não autenticado');
-              
-              // Mostrar botão de login, ocultar botão de logout
-              loginButton.style.display = 'flex';
-              logoutButton.style.display = 'none';
-              
-              // Redefinir textos de usuário
-              userNameElement.textContent = 'Fazer Login';
-              userEmailElement.textContent = 'Clique para acessar';
-            }
-          });
-        } else {
-          console.warn('Módulo de autenticação não encontrado');
+    // Esconder todas as abas
+    document.querySelectorAll('.tab-content').forEach(function(tab) {
+      console.log(`Escondendo aba: ${tab.id}`);
+      tab.style.display = 'none';
+    });
+    
+    // Mostrar apenas a aba selecionada
+    var selectedTab = document.getElementById(tabId + 'Tab');
+    if (selectedTab) {
+      console.log(`Mostrando aba: ${selectedTab.id}`);
+      selectedTab.style.display = 'block';
+    } else {
+      console.error(`Aba ${tabId + 'Tab'} não encontrada`);
+    }
+    
+    // Atualizar as classes ativas
+    document.querySelectorAll('.tab').forEach(function(tab) {
+      tab.classList.remove('active');
+    });
+    
+    const activeTab = document.getElementById('tab-' + tabId);
+    if (activeTab) {
+      activeTab.classList.add('active');
+    } else {
+      console.error(`Elemento de tab ${tabId} não encontrado`);
+    }
+    
+    // Carregar conteúdo específico
+    if (tabId === 'history') {
+      loadTranscriptions();
+    }
+  }
+  
+  function loadTranscriptions() {
+    console.log("Carregando transcrições...");
+    
+    if (!window.firebase || !firebase.auth || !firebase.database) {
+      console.error("Firebase não disponível");
+      return;
+    }
+    
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      console.error("Usuário não autenticado");
+      return;
+    }
+    
+    const transcriptionList = document.getElementById('transcriptionList');
+    if (!transcriptionList) return;
+    
+    transcriptionList.innerHTML = '<li>Carregando transcrições...</li>';
+    
+    // Tentar carregar de ambos os caminhos possíveis
+    firebase.database().ref(`users/${user.uid}/transcriptions`).once('value')
+      .then(snapshot => {
+        if (!snapshot.exists()) {
+          return firebase.database().ref(`MapzyVox/users/${user.uid}/transcriptions`).once('value');
         }
+        return snapshot;
+      })
+      .then(snapshot => {
+        if (!snapshot.exists() || snapshot.numChildren() === 0) {
+          transcriptionList.innerHTML = '<li>Nenhuma transcrição encontrada</li>';
+          return;
+        }
+        
+        const transcriptions = [];
+        snapshot.forEach(childSnapshot => {
+          transcriptions.push({
+            id: childSnapshot.key,
+            ...childSnapshot.val()
+          });
+        });
+        
+        transcriptionList.innerHTML = '';
+        
+        // Ordenar e mostrar
+        transcriptions
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+          .forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'transcription-item';
+            li.innerHTML = `
+              <div class="transcription-title">${item.title || 'Sem título'}</div>
+              <div class="transcription-date">${new Date(item.createdAt || 0).toLocaleString()}</div>
+              <div class="transcription-content">${item.text ? item.text.substring(0, 100) + (item.text.length > 100 ? '...' : '') : ''}</div>
+            `;
+            transcriptionList.appendChild(li);
+          });
+      })
+      .catch(error => {
+        console.error("Erro ao carregar transcrições:", error);
+        transcriptionList.innerHTML = '<li>Erro ao carregar transcrições</li>';
       });
-    </script>
+  }
+  
+  // Verificar a URL e mostrar a aba correta
+  function checkHash() {
+    const hash = window.location.hash;
+    if (hash) {
+      const tabId = hash.substring(1);
+      showTab(tabId);
+    } else {
+      showTab('recorder');
+    }
+  }
+  
+  // Adicionar manipuladores de eventos
+  window.addEventListener('load', checkHash);
+  window.addEventListener('hashchange', checkHash);
+  
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function(e) {
+      const tabId = this.getAttribute('href').substring(1);
+      showTab(tabId);
+      e.preventDefault();
+    });
+  });
+})();
+</script>
   </div>
 </body>
 </html>
