@@ -338,37 +338,44 @@
         });
       });
     })();
-  
-    
-    
-  </script>
-  <script src="js/api-key-fix.js"></script>
-<script src="js/fix-history.js"></script>
 </script>
- //------------------------
-   // Função de depuração avançada para informações do usuário
-function advancedUserInfoDebug() {
-  console.log('=== Início da Depuração de Usuário ===');
+  
+<script src="js/api-key-fix.js"></script>
+<script src="js/fix-history.js"></script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+// Script de diagnóstico avançado de autenticação
+function comprehensiveAuthDiagnosis() {
+  console.log('=== DIAGNÓSTICO COMPLETO DE AUTENTICAÇÃO ===');
+  
+  // Verificações de estado de autenticação
+  console.log('Verificando métodos de autenticação:');
   
   // Verificação via diferentes métodos
-  const methods = [
-    { 
-      name: 'firebaseApp.auth.currentUser', 
-      user: window.firebaseApp?.auth?.currentUser 
-    },
+  const authChecks = [
     { 
       name: 'firebase.auth().currentUser', 
       user: firebase.auth().currentUser 
+    },
+    { 
+      name: 'window.firebaseApp.auth.currentUser', 
+      user: window.firebaseApp?.auth?.currentUser 
     }
   ];
 
-  methods.forEach(method => {
-    console.log(`Verificando ${method.name}:`);
+  authChecks.forEach(method => {
+    console.log(`\n--- ${method.name} ---`);
     if (method.user) {
       console.log('Usuário encontrado:', {
         uid: method.user.uid,
         email: method.user.email,
         displayName: method.user.displayName,
+        emailVerified: method.user.emailVerified,
+        isAnonymous: method.user.isAnonymous,
         providerData: method.user.providerData
       });
     } else {
@@ -376,39 +383,80 @@ function advancedUserInfoDebug() {
     }
   });
 
-  // Tenta renderizar no elemento de exibição do usuário
+  // Verificação de estado de autenticação
+  console.log('\n--- Verificações Adicionais ---');
+  const auth = firebase.auth();
+  
+  console.log('Auth Instance:', !!auth);
+  console.log('Auth State:', auth.currentUser ? 'Usuário autenticado' : 'Sem usuário');
+
+  // Tentativa de obter token de autenticação
+  if (auth.currentUser) {
+    auth.currentUser.getIdToken(/* forceRefresh */ true)
+      .then((token) => {
+        console.log('Token de autenticação obtido com sucesso');
+        console.log('Token (parcial):', token.substring(0, 20) + '...');
+      })
+      .catch((error) => {
+        console.error('Erro ao obter token:', error);
+      });
+  }
+
+  // Renderização de informações
   const userDisplayElement = document.getElementById('user-display');
   if (userDisplayElement) {
     const currentUser = firebase.auth().currentUser;
     if (currentUser) {
       userDisplayElement.innerHTML = `
-        <div class="user-info-debug">
-          <h3>Informações do Usuário</h3>
+        <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px;">
+          <h3>📋 Informações do Usuário</h3>
           <p><strong>Email:</strong> ${currentUser.email}</p>
           <p><strong>UID:</strong> ${currentUser.uid}</p>
           <p><strong>Nome:</strong> ${currentUser.displayName || 'Não definido'}</p>
+          <p><strong>Email Verificado:</strong> ${currentUser.emailVerified ? '✅ Sim' : '❌ Não'}</p>
         </div>
       `;
       console.log('Elemento de usuário atualizado com sucesso');
     } else {
-      userDisplayElement.innerHTML = '<p>Nenhum usuário logado</p>';
+      userDisplayElement.innerHTML = `
+        <div style="background-color: #ffeeee; padding: 15px; border-radius: 8px; color: red;">
+          <h3>⚠️ Nenhum Usuário Logado</h3>
+          <p>Não foi possível identificar um usuário autenticado</p>
+        </div>
+      `;
       console.log('Nenhum usuário para renderizar');
     }
   } else {
     console.warn('Elemento #user-display não encontrado no documento');
   }
 
-  console.log('=== Fim da Depuração de Usuário ===');
+  console.log('=== FIM DO DIAGNÓSTICO ===');
 }
 
-// Adicionar listener de estado de autenticação
+// Listener de estado de autenticação com depuração detalhada
 firebase.auth().onAuthStateChanged((user) => {
-  console.log('Mudança de estado de autenticação detectada');
-  advancedUserInfoDebug();
+  console.log('Mudança de estado de autenticação detectada:');
+  console.log('Usuário:', user ? user.email : 'Nenhum usuário');
+  
+  // Informações adicionais de depuração
+  if (user) {
+    console.log('Detalhes do usuário:', {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      emailVerified: user.emailVerified
+    });
+  }
+  
+  // Chama diagnóstico
+  comprehensiveAuthDiagnosis();
+}, (error) => {
+  console.error('Erro no listener de autenticação:', error);
 });
 
-// Chamar imediatamente para verificação inicial
-advancedUserInfoDebug(); 
-</script>
+// Chamada inicial para diagnóstico
+comprehensiveAuthDiagnosis();
+<script>	
+
 </body>
 </html>
