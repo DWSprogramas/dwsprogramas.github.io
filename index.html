@@ -111,25 +111,20 @@
     </div>
     
    
-   <script>
+<script>
 (function() {
   function showTab(tabId) {
     console.log("Mostrando aba:", tabId);
-    console.log("Elemento da aba:", document.getElementById(tabId + 'Tab'));
     
     // Esconder todas as abas
     document.querySelectorAll('.tab-content').forEach(function(tab) {
-      console.log(`Escondendo aba: ${tab.id}`);
       tab.style.display = 'none';
     });
     
     // Mostrar apenas a aba selecionada
-    var selectedTab = document.getElementById(tabId + 'Tab');
+    const selectedTab = document.getElementById(tabId + 'Tab');
     if (selectedTab) {
-      console.log(`Mostrando aba: ${selectedTab.id}`);
       selectedTab.style.display = 'block';
-    } else {
-      console.error(`Aba ${tabId + 'Tab'} não encontrada`);
     }
     
     // Atualizar as classes ativas
@@ -140,23 +135,25 @@
     const activeTab = document.getElementById('tab-' + tabId);
     if (activeTab) {
       activeTab.classList.add('active');
-    } else {
-      console.error(`Elemento de tab ${tabId} não encontrado`);
     }
     
     // Carregar conteúdo específico
     if (tabId === 'history') {
-      loadTranscriptions();
+      // Verificar se o usuário está autenticado antes de carregar
+      const user = firebase.auth().currentUser;
+      if (user) {
+        loadTranscriptions();
+      } else {
+        const transcriptionList = document.getElementById('transcriptionList');
+        if (transcriptionList) {
+          transcriptionList.innerHTML = '<li>Faça login para ver suas transcrições</li>';
+        }
+      }
     }
   }
   
   function loadTranscriptions() {
     console.log("Carregando transcrições...");
-    
-    if (!window.firebase || !firebase.auth || !firebase.database) {
-      console.error("Firebase não disponível");
-      return;
-    }
     
     const user = firebase.auth().currentUser;
     if (!user) {
@@ -169,48 +166,61 @@
     
     transcriptionList.innerHTML = '<li>Carregando transcrições...</li>';
     
-    // Tentar carregar de ambos os caminhos possíveis
-    firebase.database().ref(`users/${user.uid}/transcriptions`).once('value')
-      .then(snapshot => {
-        if (!snapshot.exists()) {
-          return firebase.database().ref(`MapzyVox/users/${user.uid}/transcriptions`).once('value');
-        }
-        return snapshot;
-      })
-      .then(snapshot => {
-        if (!snapshot.exists() || snapshot.numChildren() === 0) {
-          transcriptionList.innerHTML = '<li>Nenhuma transcrição encontrada</li>';
-          return;
-        }
-        
-        const transcriptions = [];
-        snapshot.forEach(childSnapshot => {
-          transcriptions.push({
-            id: childSnapshot.key,
-            ...childSnapshot.val()
+    // Caminhos de busca para transcrições
+    const paths = [
+      `users/${user.uid}/transcriptions`,
+      `MapzyVox/users/${user.uid}/transcriptions`
+    ];
+    
+    function tryLoadTranscriptions(pathIndex = 0) {
+      if (pathIndex >= paths.length) {
+        transcriptionList.innerHTML = '<li>Nenhuma transcrição encontrada</li>';
+        return;
+      }
+      
+      const currentPath = paths[pathIndex];
+      console.log(`Tentando carregar de: ${currentPath}`);
+      
+      firebase.database().ref(currentPath).once('value')
+        .then(snapshot => {
+          if (!snapshot.exists() || snapshot.numChildren() === 0) {
+            console.log(`Sem transcrições em ${currentPath}`);
+            tryLoadTranscriptions(pathIndex + 1);
+            return;
+          }
+          
+          const transcriptions = [];
+          snapshot.forEach(childSnapshot => {
+            transcriptions.push({
+              id: childSnapshot.key,
+              ...childSnapshot.val()
+            });
           });
+          
+          transcriptionList.innerHTML = '';
+          
+          // Ordenar e mostrar
+          transcriptions
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+            .forEach(item => {
+              const li = document.createElement('li');
+              li.className = 'transcription-item';
+              li.innerHTML = `
+                <div class="transcription-title">${item.title || 'Sem título'}</div>
+                <div class="transcription-date">${new Date(item.createdAt || 0).toLocaleString()}</div>
+                <div class="transcription-content">${item.text ? item.text.substring(0, 100) + (item.text.length > 100 ? '...' : '') : ''}</div>
+              `;
+              transcriptionList.appendChild(li);
+            });
+        })
+        .catch(error => {
+          console.error(`Erro ao carregar transcrições de ${currentPath}:`, error);
+          tryLoadTranscriptions(pathIndex + 1);
         });
-        
-        transcriptionList.innerHTML = '';
-        
-        // Ordenar e mostrar
-        transcriptions
-          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-          .forEach(item => {
-            const li = document.createElement('li');
-            li.className = 'transcription-item';
-            li.innerHTML = `
-              <div class="transcription-title">${item.title || 'Sem título'}</div>
-              <div class="transcription-date">${new Date(item.createdAt || 0).toLocaleString()}</div>
-              <div class="transcription-content">${item.text ? item.text.substring(0, 100) + (item.text.length > 100 ? '...' : '') : ''}</div>
-            `;
-            transcriptionList.appendChild(li);
-          });
-      })
-      .catch(error => {
-        console.error("Erro ao carregar transcrições:", error);
-        transcriptionList.innerHTML = '<li>Erro ao carregar transcrições</li>';
-      });
+    }
+    
+    // Iniciar tentativa de carregamento
+    tryLoadTranscriptions();
   }
   
   // Verificar a URL e mostrar a aba correta
