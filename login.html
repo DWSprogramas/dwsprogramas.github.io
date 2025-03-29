@@ -33,6 +33,59 @@
   <script src="./js/storage-manager.js"></script>
   <script src="./js/user-auth.js"></script>
   <script src="./js/register-sw.js"></script>
+
+  <style>
+    /* Adicionar estilos para mensagens de erro e status */
+    #message-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      max-width: 90%;
+      width: 400px;
+    }
+    .message {
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      animation: slideIn 0.3s ease-out;
+    }
+    .message-error {
+      background-color: #f44336;
+      color: white;
+    }
+    .message-success {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .fade-out {
+      animation: fadeOut 0.5s forwards;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    /* Estilo para spinner de carregamento */
+    .login-button-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body class="login-page">
   <div class="container" x-data="{ isLoginMode: true }">
@@ -93,100 +146,338 @@
   </div>
   
   <script>
+    // Prevenir verificações de autenticação duplicadas
+    window.authCheckStarted = false;
+    
     document.addEventListener('DOMContentLoaded', () => {
-      // Prevenir verificações de autenticação duplicadas
-      if (window.authCheckStarted) return;
+      console.log("Página de login carregada");
+      
+      if (window.authCheckStarted) {
+        console.log("Verificação de autenticação já iniciada, ignorando...");
+        return;
+      }
+      
       window.authCheckStarted = true;
+      console.log("Iniciando verificação de autenticação...");
       
-      // Verificar se o usuário já está logado
-      firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-          // Usuário já está logado, redirecionar para a página principal
-          console.log("Login detectado, redirecionando para index.html");
-          window.location.href = './index.html';
-        } else {
-          console.log("Usuário não autenticado, permanecendo na página de login");
-          // Ativar botões de login apenas quando confirmamos que o usuário não está logado
-          setupLoginButtons();
+      // Redirecionar para a página principal se já estiver logado
+      console.log("Verificando estado de autenticação...");
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+            console.log("Usuário já autenticado:", user.email);
+            console.log("Redirecionando para a página principal...");
+            window.location.href = './index.html';
+          } else {
+            console.log("Usuário não autenticado, permanecendo na página de login");
+            setupLoginButtons();
+          }
+        });
+      } else {
+        console.error("Firebase não está disponível");
+        // Tentar novamente após um curto período
+        setTimeout(() => {
+          if (typeof firebase !== 'undefined' && firebase.auth) {
+            firebase.auth().onAuthStateChanged((user) => {
+              if (user) {
+                console.log("Usuário já autenticado (após retry):", user.email);
+                window.location.href = './index.html';
+              } else {
+                console.log("Usuário não autenticado (após retry)");
+                setupLoginButtons();
+              }
+            });
+          } else {
+            console.error("Firebase ainda não está disponível após retry");
+            showError("Erro ao conectar com o serviço de autenticação. Tente recarregar a página.");
+            setupLoginButtons(); // Configurar botões mesmo assim
+          }
+        }, 2000);
+      }
+      
+      // Função para mostrar mensagens de erro
+      function showError(message) {
+        // Verifica se já existe um elemento de mensagem
+        let messageElement = document.getElementById('message-container');
+        if (!messageElement) {
+          // Cria o elemento se não existir
+          messageElement = document.createElement('div');
+          messageElement.id = 'message-container';
+          document.body.appendChild(messageElement);
         }
-      });
+        
+        // Limpa qualquer mensagem anterior
+        messageElement.innerHTML = '';
+        
+        // Cria o elemento da nova mensagem
+        const msg = document.createElement('div');
+        msg.className = 'message message-error';
+        msg.textContent = message;
+        
+        // Adiciona à área de mensagens
+        messageElement.appendChild(msg);
+        
+        // Remove após 4 segundos
+        setTimeout(() => {
+          msg.classList.add('fade-out');
+          setTimeout(() => {
+            if (messageElement.contains(msg)) {
+              messageElement.removeChild(msg);
+            }
+          }, 500);
+        }, 4000);
+      }
       
+      // Configuração dos botões de login/cadastro
       function setupLoginButtons() {
-        // Configuração dos botões de login
-        document.getElementById('login-button').addEventListener('click', () => {
-          const email = document.getElementById('email').value;
-          const password = document.getElementById('password').value;
-          
-          // Verificar se os campos foram preenchidos
-          if (!email || !password) {
-            window.authUtils.showError('Por favor, preencha todos os campos');
-            return;
-          }
-          
-          // Fazer login
-          window.authUtils.loginWithEmail(email, password);
-        });
+        console.log("Configurando botões de login e cadastro");
         
-        document.getElementById('google-login').addEventListener('click', () => {
-          window.authUtils.loginWithGoogle();
-        });
+        // Login com email/senha
+        const loginButton = document.getElementById('login-button');
+        if (loginButton) {
+          loginButton.addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Verificar se os campos foram preenchidos
+            if (!email || !password) {
+              showError('Por favor, preencha todos os campos');
+              return;
+            }
+            
+            // Mostrar indicador de carregamento
+            loginButton.disabled = true;
+            const originalContent = loginButton.innerHTML;
+            loginButton.innerHTML = '<div class="login-button-spinner"></div> Entrando...';
+            
+            // Fazer login
+            if (window.authUtils && typeof window.authUtils.loginWithEmail === 'function') {
+              window.authUtils.loginWithEmail(email, password)
+                .catch(error => {
+                  // Restaurar botão em caso de erro
+                  loginButton.disabled = false;
+                  loginButton.innerHTML = originalContent;
+                });
+            } else {
+              // Implementação fallback se authUtils não estiver disponível
+              firebase.auth().signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                  console.log('Login com email bem-sucedido:', userCredential.user.uid);
+                  window.location.href = './index.html';
+                })
+                .catch((error) => {
+                  console.error('Erro de login com email:', error);
+                  
+                  // Restaurar botão
+                  loginButton.disabled = false;
+                  loginButton.innerHTML = originalContent;
+                  
+                  // Mostrar mensagem de erro apropriada
+                  let errorMessage = 'Erro ao fazer login. Verifique seu email e senha.';
+                  
+                  if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'Usuário não encontrado. Verifique seu email ou crie uma conta.';
+                  } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Senha incorreta. Tente novamente.';
+                  } else if (error.code === 'auth/invalid-email') {
+					errorMessage = 'Email inválido. Verifique o formato do email.';
+                  } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
+                  }
+                  
+                  // Mostrar mensagem
+                  showError(errorMessage);
+                });
+            }
+          });
+        }
         
-        // Configuração do botão de registro
-        document.getElementById('register-button').addEventListener('click', () => {
-          const name = document.getElementById('reg-name').value;
-          const email = document.getElementById('reg-email').value;
-          const password = document.getElementById('reg-password').value;
-          const confirmPassword = document.getElementById('reg-password-confirm').value;
-          
-          // Verificar se os campos foram preenchidos
-          if (!name || !email || !password || !confirmPassword) {
-            window.authUtils.showError('Por favor, preencha todos os campos');
-            return;
-          }
-          
-          // Verificar se as senhas conferem
-          if (password !== confirmPassword) {
-            window.authUtils.showError('As senhas não conferem');
-            return;
-          }
-          
-          // Fazer registro
-          window.authUtils.registerUser(email, password, name);
-        });
+        // Login com Google
+        const googleButton = document.getElementById('google-login');
+        if (googleButton) {
+          googleButton.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Mostrar indicador de carregamento
+            googleButton.disabled = true;
+            const originalContent = googleButton.innerHTML;
+            googleButton.innerHTML = '<div class="login-button-spinner"></div> Conectando...';
+            
+            if (window.authUtils && typeof window.authUtils.loginWithGoogle === 'function') {
+              window.authUtils.loginWithGoogle();
+            } else {
+              // Implementação fallback
+              firebase.auth().signInWithPopup(provider)
+                .then((result) => {
+                  // Login bem-sucedido
+                  const user = result.user;
+                  console.log('Login com Google bem-sucedido:', user.uid);
+                  
+                  // Verificar se é um novo usuário
+                  const isNewUser = result.additionalUserInfo.isNewUser;
+                  if (isNewUser) {
+                    // Criar dados iniciais do usuário
+                    createUserData(user.uid);
+                  }
+                  
+                  // Redirecionar para a página principal
+                  window.location.href = './index.html';
+                })
+                .catch((error) => {
+                  console.error('Erro de login com Google:', error);
+                  
+                  // Restaurar botão
+                  googleButton.disabled = false;
+                  googleButton.innerHTML = originalContent;
+                  
+                  // Mostrar mensagem de erro
+                  showError('Erro ao entrar com Google: ' + error.message);
+                });
+            }
+          });
+        }
+        
+        // Registro de novo usuário
+        const registerButton = document.getElementById('register-button');
+        if (registerButton) {
+          registerButton.addEventListener('click', () => {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-password-confirm').value;
+            
+            // Verificar se os campos foram preenchidos
+            if (!name || !email || !password || !confirmPassword) {
+              showError('Por favor, preencha todos os campos');
+              return;
+            }
+            
+            // Verificar se as senhas conferem
+            if (password !== confirmPassword) {
+              showError('As senhas não conferem');
+              return;
+            }
+            
+            // Mostrar indicador de carregamento
+            registerButton.disabled = true;
+            const originalContent = registerButton.innerHTML;
+            registerButton.innerHTML = '<div class="login-button-spinner"></div> Registrando...';
+            
+            if (window.authUtils && typeof window.authUtils.registerUser === 'function') {
+              window.authUtils.registerUser(email, password, name);
+            } else {
+              // Implementação fallback
+              firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                  // Conta criada com sucesso
+                  const user = userCredential.user;
+                  console.log('Usuário registrado com sucesso:', user.uid);
+                  
+                  // Atualizar o perfil do usuário com o nome
+                  return user.updateProfile({
+                    displayName: name
+                  }).then(() => {
+                    // Criar dados iniciais do usuário
+                    createUserData(user.uid);
+                    
+                    // Redirecionar para a página principal
+                    window.location.href = './index.html';
+                  });
+                })
+                .catch((error) => {
+                  console.error('Erro ao registrar usuário:', error);
+                  
+                  // Restaurar botão
+                  registerButton.disabled = false;
+                  registerButton.innerHTML = originalContent;
+                  
+                  // Mostrar mensagem de erro apropriada
+                  let errorMessage = 'Erro ao criar conta. Tente novamente.';
+                  
+                  if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Este email já está em uso. Tente fazer login.';
+                  } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Email inválido. Verifique o formato do email.';
+                  } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
+                  }
+                  
+                  // Mostrar mensagem
+                  showError(errorMessage);
+                });
+            }
+          });
+        }
         
         // Esqueceu a senha
-        document.getElementById('forgot-password').addEventListener('click', (e) => {
-          e.preventDefault();
-          
-          const email = document.getElementById('email').value;
-          if (!email) {
-            window.authUtils.showError('Por favor, digite seu e-mail');
-            return;
-          }
-          
-          firebase.auth().sendPasswordResetEmail(email)
-            .then(() => {
-              alert('Um email de redefinição de senha foi enviado para ' + email);
-            })
-            .catch((error) => {
-              console.error('Erro ao enviar email de redefinição:', error);
-              window.authUtils.showError('Erro ao enviar email de redefinição: ' + error.message);
-            });
-        });
+        const forgotPasswordLink = document.getElementById('forgot-password');
+        if (forgotPasswordLink) {
+          forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            if (!email) {
+              showError('Por favor, digite seu e-mail');
+              return;
+            }
+            
+            firebase.auth().sendPasswordResetEmail(email)
+              .then(() => {
+                // Mostrar mensagem de sucesso
+                alert('Um email de redefinição de senha foi enviado para ' + email);
+              })
+              .catch((error) => {
+                console.error('Erro ao enviar email de redefinição:', error);
+                showError('Erro ao enviar email de redefinição: ' + error.message);
+              });
+          });
+        }
         
         // Permitir login pressionando Enter no campo de senha
-        document.getElementById('password').addEventListener('keyup', (event) => {
-          if (event.key === 'Enter') {
-            document.getElementById('login-button').click();
-          }
-        });
+        const passwordField = document.getElementById('password');
+        if (passwordField) {
+          passwordField.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+              document.getElementById('login-button').click();
+            }
+          });
+        }
         
         // Permitir registro pressionando Enter no campo de confirmação de senha
-        document.getElementById('reg-password-confirm').addEventListener('keyup', (event) => {
-          if (event.key === 'Enter') {
-            document.getElementById('register-button').click();
+        const confirmPasswordField = document.getElementById('reg-password-confirm');
+        if (confirmPasswordField) {
+          confirmPasswordField.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+              document.getElementById('register-button').click();
+            }
+          });
+        }
+      }
+      
+      // Função para criar dados iniciais do usuário (fallback)
+      function createUserData(userId) {
+        if (!userId) return Promise.reject(new Error('ID de usuário não fornecido'));
+        
+        const userData = {
+          createdAt: new Date().toISOString(),
+          settings: {
+            theme: 'light',
+            notifications: true
+          },
+          transcriptions: {
+            count: 0
           }
-        });
+        };
+        
+        return firebase.database().ref('users/' + userId).set(userData)
+          .then(() => {
+            console.log('Dados iniciais do usuário criados com sucesso');
+            return userData;
+          })
+          .catch((error) => {
+            console.error('Erro ao criar dados iniciais do usuário:', error);
+            return null;
+          });
       }
     });
   </script>
