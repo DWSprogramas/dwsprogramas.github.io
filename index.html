@@ -1,321 +1,50 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapzy Vox IA - Transcritor e Processador de Voz por IA</title>
-  
-  <!-- Meta tags de segurança -->
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Biblioteca Material Icons da Google para ícones -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <!-- Alpine.js para interações simples -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Scripts Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <!-- Scripts da aplicação na ordem correta de dependência -->
-  <script src="js/firebase-config.js"></script>
-  <script src="js/security.js"></script>
-  <script src="js/storage-manager.js"></script>
-  <script src="js/user-auth.js"></script>
-  <script src="js/audio-recorder.js"></script>
-  <script src="js/transcription.js"></script>
-  <script src="js/ui-controller.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/register-sw.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4CAF50" />
+  <title>MapzyVox IA</title>
+
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f0f0f0;
+      text-align: center;
+    }
+    .splash {
+      max-width: 300px;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="app-header">
-      <h1 class="app-title">Mapzy Vox IA</h1>
-      <p class="app-subtitle">Transcritor e Processador de Voz por IA</p>
-    </div>
-    
-    <div class="nav-bar">
-      <div class="user-info">
-        <div class="user-avatar-container">
-          <img src="" alt="Avatar" class="user-avatar" style="display: none;">
-          <div class="user-initials" style="display: none;">U</div>
-        </div>
-        <div class="user-details">
-          <span class="user-name" id="userName">Usuário</span>
-          <span class="user-email" id="userEmail">email@exemplo.com</span>
-        </div>
-      </div>
-      <button class="logout-button" onclick="window.authUtils.logout()">
-        <span class="material-icons">logout</span> Sair
-      </button>
-    </div>
-    
-    <div class="tabs">
-      <div class="tab active" data-tab="recorder">Gravador</div>
-      <div class="tab" data-tab="history">Histórico</div>
-      <div class="tab" data-tab="settings">Configurações</div>
-    </div>
-    
-    <!-- Conteúdo da aba do gravador -->
-    <div id="recorderTab" class="tab-content active">
-      <div class="api-key-container">
-        <h3>Configurar API OpenAI</h3>
-        <p>Digite sua chave API da OpenAI para ativar a transcrição e processamento de áudio.</p>
-        <input type="password" id="apiKey" placeholder="Chave API (começa com sk-...)">
-        <button id="saveApiKey">Salvar Chave API</button>
-      </div>
-      
-      <div id="status">Pronto para gravar. Clique em "Iniciar Gravação".</div>
-      <div id="error"></div>
-      
-      <div class="recorder-controls">
-        <button id="startRecording">Iniciar Gravação</button>
-        <button id="stopRecording" disabled>Parar Gravação (<span id="recordingTime">00:00</span>)</button>
-      </div>
-      
-      <h3>Texto Transcrito <span class="editable-indicator">(Editável)</span></h3>
-      <div id="transcription" class="editable" contenteditable="true"></div>
-      
-      <div class="processing-options">
-        <h3>Opções de Processamento</h3>
-        <div>
-          <input type="radio" name="processingOption" id="optionSummary" value="summary" checked>
-          <label for="optionSummary">Resumo Conciso</label>
-        </div>
-        <div>
-          <input type="radio" name="processingOption" id="optionList" value="list">
-          <label for="optionList">Lista de Tópicos</label>
-        </div>
-        <div>
-          <input type="radio" name="processingOption" id="optionMindmap" value="mindmap">
-          <label for="optionMindmap">Mapa Mental</label>
-        </div>
-      </div>
-      
-      <button id="processText" disabled>Processar Texto</button>
-      
-      <h3>Texto Processado</h3>
-      <div id="processedOutput"></div>
-      
-      <button id="saveTranscriptionBtn" disabled>Salvar Transcrição</button>
-    </div>
-    
-    <!-- Conteúdo da aba de histórico -->
-    <div id="historyTab" class="tab-content">
-      <h2>Histórico de Transcrições</h2>
-      <div id="noTranscriptions" class="empty-state" style="display: none;">
-        <div class="empty-state-icon">📝</div>
-        <p>Você ainda não tem transcrições salvas.</p>
-        <p>Comece gravando e processando seu áudio!</p>
-      </div>
-      <ul id="transcriptionList" class="transcription-list">
-        <!-- Preenchido via JavaScript -->
-      </ul>
-    </div>
-    
-    <!-- Conteúdo da aba de configurações -->
-    <div id="settingsTab" class="tab-content">
-      <h2>Configurações</h2>
-      
-      <div class="card">
-        <h3 class="card-title">API OpenAI</h3>
-        <p>Configure sua chave API para usar o serviço de transcrição e processamento da OpenAI.</p>
-        <div class="form-group">
-          <label for="apiKeySetting">Chave API:</label>
-          <input type="password" id="apiKeySetting" placeholder="Chave API da OpenAI (começa com sk-...)">
-          <button id="saveApiKeySetting">Salvar</button>
-        </div>
-        <p class="hint">A chave API é armazenada com segurança em seu navegador e no Firebase.</p>
-      </div>
-      
-      <div class="card">
-        <h3 class="card-title">Sua Conta</h3>
-        <p><strong>Email:</strong> <span id="userEmailSetting"></span></p>
-        <button id="changePasswordBtn">Alterar Senha</button>
-        <button id="deleteAccountBtn" style="background-color: #e74c3c;">Excluir Conta</button>
-      </div>
-    </div>
-    
-    <!-- Modal para salvar transcrição -->
-    <div id="saveModal" class="modal">
-      <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h3 class="modal-title">Salvar Transcrição</h3>
-        <div class="modal-form-group">
-          <label for="transcriptionTitle">Título da Transcrição:</label>
-          <input type="text" id="transcriptionTitle" placeholder="Digite um título para esta transcrição">
-        </div>
-        <button id="confirmSaveBtn">Salvar</button>
-      </div>
-    </div>
-    
-    <!-- Banner de instalação do PWA -->
-    <div id="pwaInstallPrompt" style="display: none;">
-      <p>Instale o Mapzy Vox IA para um acesso mais rápido e recursos offline.</p>
-      <button id="installButton">Instalar</button>
-      <button id="dismissButton">Agora não</button>
-    </div>
+  <div class="splash">
+    <h1>MapzyVox IA</h1>
+    <p>Carregando aplicação...</p>
   </div>
-  
+
+  <script src="/js/register-sw.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Inicializar componentes da UI
-      if (window.uiController && typeof window.uiController.initUI === 'function') {
-        window.uiController.initUI();
-      } else {
-        console.warn('UI Controller não encontrado');
-      }
-      
-      // Inicializar o módulo de transcrição
-      if (window.transcriptionUtils && typeof window.transcriptionUtils.initTranscription === 'function') {
-        window.transcriptionUtils.initTranscription();
-      } else {
-        console.warn('Módulo de transcrição não encontrado');
-      }
-      
-      // Inicializar o módulo de gravação de áudio
-      if (typeof initAudioRecorder === 'function') {
-        initAudioRecorder();
-      } else {
-        console.warn('Módulo de gravação de áudio não encontrado');
-      }
-      
-      // Checar a autenticação
-      if (window.authUtils && typeof window.authUtils.checkAuthState === 'function') {
-        window.authUtils.checkAuthState(function(user) {
-          if (user) {
-            console.log('Usuário autenticado:', user.email);
-          } else {
-            console.log('Usuário não autenticado, redirecionando...');
-          }
-        });
-      } else {
-        console.warn('Módulo de autenticação não encontrado');
-      }
-      
-      // Carregar a chave API
-      if (window.storageUtils && typeof window.storageUtils.loadApiKey === 'function') {
-        window.storageUtils.loadApiKey().then(apiKey => {
-          const apiKeyInput = document.getElementById('apiKey');
-          const apiKeySettingInput = document.getElementById('apiKeySetting');
-          
-          if (apiKey) {
-            if (apiKeyInput) apiKeyInput.value = apiKey;
-            if (apiKeySettingInput) apiKeySettingInput.value = apiKey;
-            console.log('Chave API carregada com sucesso');
-          } else {
-            console.log('Nenhuma chave API encontrada');
-          }
-        });
-      } else {
-        console.warn('Módulo de armazenamento não encontrado');
-      }
-    });
-    
- //-----------------------------------   
-    // Script de diagnóstico para debugar problema de salvar a chave API
-// Inclua este script temporariamente na página index.html após todos os outros scripts
-
-(function() {
-    console.log("==== Diagnóstico de Chave API ====");
-    
-    // Verificar se o elemento de input e botão existem
-    const apiKeyInput = document.getElementById('apiKey');
-    const saveApiKeyButton = document.getElementById('saveApiKey');
-    
-    console.log("Input da API Key encontrado:", apiKeyInput !== null);
-    console.log("Botão de salvar API encontrado:", saveApiKeyButton !== null);
-    
-    // Verificar se os módulos necessários estão disponíveis
-    console.log("window.firebaseHelper disponível:", window.firebaseHelper !== undefined);
-    console.log("window.storageUtils disponível:", window.storageUtils !== undefined);
-    
-    if (window.firebaseHelper) {
-        console.log("firebaseHelper.saveUserApiKey é uma função:", typeof window.firebaseHelper.saveUserApiKey === 'function');
-    }
-    
-    if (window.storageUtils) {
-        console.log("storageUtils.saveApiKeyLocally é uma função:", typeof window.storageUtils.saveApiKeyLocally === 'function');
-    }
-    
-    // Verificar estado da autenticação
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-        firebase.auth().onAuthStateChanged((user) => {
-            console.log("Usuário autenticado:", user ? "Sim" : "Não");
-            if (user) {
-                console.log("UID do usuário:", user.uid);
-                console.log("Email do usuário:", user.email);
-            }
-        });
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 500);
+      });
     } else {
-        console.log("Firebase Auth não disponível");
+      window.location.href = "login.html";
     }
-    
-    // Verificar se já existe uma chave API salva
-    console.log("Chave API no localStorage:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
-    
-
-</script>
-<script>
-// Script de diagnóstico para debugar problema de salvar a chave API
-(function() {
-    console.log("==== Diagnóstico de Chave API ====");
-    
-    // Verificar se o elemento de input e botão existem
-    const apiKeyInput = document.getElementById('apiKey');
-    const saveApiKeyButton = document.getElementById('saveApiKey');
-    
-    console.log("Input da API Key encontrado:", apiKeyInput !== null);
-    console.log("Botão de salvar API encontrado:", saveApiKeyButton !== null);
-    
-    // Verificar se os módulos necessários estão disponíveis
-    console.log("window.firebaseHelper disponível:", window.firebaseHelper !== undefined);
-    console.log("window.storageUtils disponível:", window.storageUtils !== undefined);
-    
-    if (window.firebaseHelper) {
-        console.log("firebaseHelper.saveUserApiKey é uma função:", typeof window.firebaseHelper.saveUserApiKey === 'function');
-    }
-    
-    if (window.storageUtils) {
-        console.log("storageUtils.saveApiKeyLocally é uma função:", typeof window.storageUtils.saveApiKeyLocally === 'function');
-    }
-    
-    // Verificar estado da autenticação
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-        firebase.auth().onAuthStateChanged((user) => {
-            console.log("Usuário autenticado:", user ? "Sim" : "Não");
-            if (user) {
-                console.log("UID do usuário:", user.uid);
-                console.log("Email do usuário:", user.email);
-            }
-        });
-    } else {
-        console.log("Firebase Auth não disponível");
-    }
-    
-    // Verificar se já existe uma chave API salva
-    console.log("Chave API no localStorage:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
-    
-    // Adicionar diagnóstico ao evento de clique
-    if (saveApiKeyButton) {
-        saveApiKeyButton.addEventListener('click', function(e) {
-            console.log("==== Evento de clique detectado ====");
-            console.log("Valor do input:", apiKeyInput ? (apiKeyInput.value ? "Preenchido" : "Vazio") : "Input não encontrado");
-            
-            // Se o evento original não for processado, isso será registrado
-            setTimeout(() => {
-                console.log("==== Verificação pós-clique ====");
-                console.log("Chave API no localStorage após clique:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
-            }, 1000);
-        });
-    }
-    
-    console.log("==== Fim do diagnóstico ====");
-})();
-</script>
+  </script>
 </body>
 </html>

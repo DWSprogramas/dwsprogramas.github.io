@@ -1,48 +1,86 @@
 /*
-  Content-Security-Policy: upgrade-insecure-requests; default-src 'self' https:; script-src 'self' https://www.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://*.firebaseio.com https://api.openai.com https://*.googleapis.com;
+  Content-Security-Policy: upgrade-insecure-requests; default-src 'self' https:; script-src 'self' https://www.gstatic.com https://storage.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://*.firebaseio.com https://api.openai.com https://*.googleapis.com;
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(self), payment=(), usb=()
-  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Access-Control-Allow-Origin: https://dwsprogramas.github.io
+  Cache-Control: public, max-age=3600
+
+/mapzy-ia/service-worker.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Content-Type: application/javascript; charset=utf-8
+
+/mapzy-ia/pwabuilder-sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Content-Type: application/javascript; charset=utf-8
+
+/mapzy-ia/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Content-Type: application/javascript; charset=utf-8
 
 /service-worker.js
-  Cache-Control: max-age=0
+  Cache-Control: no-cache, no-store, must-revalidate
+  Content-Type: application/javascript; charset=utf-8
+
+/pwabuilder-sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Content-Type: application/javascript; charset=utf-8
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
   Content-Type: application/javascript; charset=utf-8
 
 /*.js
   Content-Type: application/javascript; charset=utf-8
+  Cache-Control: public, max-age=86400
 
 /*.css
   Content-Type: text/css; charset=utf-8
+  Cache-Control: public, max-age=86400
 
 /*.json
   Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=3600
 
 /*.html
   Content-Type: text/html; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Content-Security-Policy: upgrade-insecure-requests
 
 /*.svg
   Content-Type: image/svg+xml
+  Cache-Control: public, max-age=86400
 
 /*.png
   Content-Type: image/png
+  Cache-Control: public, max-age=86400
 
 /*.jpg
   Content-Type: image/jpeg
+  Cache-Control: public, max-age=86400
 
 /*.webp
   Content-Type: image/webp
+  Cache-Control: public, max-age=86400
 
 /*.woff
   Content-Type: font/woff
+  Cache-Control: public, max-age=86400
 
 /*.woff2
   Content-Type: font/woff2
+  Cache-Control: public, max-age=86400
 
 /*.ttf
   Content-Type: font/ttf
+  Cache-Control: public, max-age=86400
 
 /manifest.json
-  Cache-Control: max-age=3600
+  Cache-Control: public, max-age=3600
+  Content-Type: application/manifest+json
+
+/mapzy-ia/manifest.json
+  Cache-Control: public, max-age=3600
   Content-Type: application/manifest+json
