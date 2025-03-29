@@ -258,6 +258,48 @@
     // Verificar se já existe uma chave API salva
     console.log("Chave API no localStorage:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
     
+
+</script>
+<script>
+// Script de diagnóstico para debugar problema de salvar a chave API
+(function() {
+    console.log("==== Diagnóstico de Chave API ====");
+    
+    // Verificar se o elemento de input e botão existem
+    const apiKeyInput = document.getElementById('apiKey');
+    const saveApiKeyButton = document.getElementById('saveApiKey');
+    
+    console.log("Input da API Key encontrado:", apiKeyInput !== null);
+    console.log("Botão de salvar API encontrado:", saveApiKeyButton !== null);
+    
+    // Verificar se os módulos necessários estão disponíveis
+    console.log("window.firebaseHelper disponível:", window.firebaseHelper !== undefined);
+    console.log("window.storageUtils disponível:", window.storageUtils !== undefined);
+    
+    if (window.firebaseHelper) {
+        console.log("firebaseHelper.saveUserApiKey é uma função:", typeof window.firebaseHelper.saveUserApiKey === 'function');
+    }
+    
+    if (window.storageUtils) {
+        console.log("storageUtils.saveApiKeyLocally é uma função:", typeof window.storageUtils.saveApiKeyLocally === 'function');
+    }
+    
+    // Verificar estado da autenticação
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged((user) => {
+            console.log("Usuário autenticado:", user ? "Sim" : "Não");
+            if (user) {
+                console.log("UID do usuário:", user.uid);
+                console.log("Email do usuário:", user.email);
+            }
+        });
+    } else {
+        console.log("Firebase Auth não disponível");
+    }
+    
+    // Verificar se já existe uma chave API salva
+    console.log("Chave API no localStorage:", localStorage.getItem('openai_api_key') ? "Existe" : "Não existe");
+    
     // Adicionar diagnóstico ao evento de clique
     if (saveApiKeyButton) {
         saveApiKeyButton.addEventListener('click', function(e) {
@@ -274,7 +316,7 @@
     
     console.log("==== Fim do diagnóstico ====");
 })();
-
-  </script>
+</script>
+<script src="js/fix-api-key.js"></script>
 </body>
 </html>
