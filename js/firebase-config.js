@@ -164,100 +164,70 @@ function createUserData(userId) {
  * @param {string} apiKey - Chave API a ser salva
  * @returns {Promise} Promise resolvida com mensagem de sucesso ou rejeitada com erro
  */
-/**
- * Salva a chave API do usuário de forma segura
- * @param {string} apiKey - Chave API a ser salva
- * @returns {Promise} Promise resolvida com mensagem de sucesso ou rejeitada com erro
- */
 function saveUserApiKey(apiKey) {
-    console.log('Função saveUserApiKey iniciada');
-    
-    if (!apiKey || !apiKey.startsWith('sk-')) {
-        console.error('Chave API inválida');
-        return Promise.reject(new Error('Chave API inválida. Deve começar com "sk-"'));
-    }
-    
-    // Verificar se o Firebase está inicializado
-    if (!firebaseApp.initialized && window.navigator.onLine) {
-        console.error('Firebase não está inicializado');
-        // Se o Firebase não estiver inicializado mas estivermos online, isso é um erro
-        return Promise.reject(new Error("Firebase não está inicializado"));
-    }
-    
-    console.log('Verificando usuário autenticado...');
-    const user = firebase.auth().currentUser;
-    
-    if (!user) {
-        console.error('Usuário não está logado');
-        return Promise.reject(new Error('Usuário não está logado'));
-    }
-    
-    console.log('Usuário autenticado:', user.uid);
-    
-    // Primeiro, salvar no localStorage como fallback
+  if (!firebaseApp.initialized && window.navigator.onLine) {
+    return Promise.reject(new Error("Firebase não está inicializado"));
+  }
+  
+  console.log('Função saveUserApiKey iniciada');
+  const user = firebaseApp.auth.currentUser;
+  
+  if (!user) {
+    console.error('Usuário não está logado');
+    return Promise.reject(new Error('Usuário não está logado'));
+  }
+  
+  console.log('Usuário autenticado:', user.uid);
+  
+  // Primeiro, salvar no localStorage usando o storageUtils
+  if (window.storageUtils && typeof window.storageUtils.saveApiKeyLocally === 'function') {
     try {
-        localStorage.setItem('openai_api_key', apiKey);
-        console.log('Chave API salva no localStorage como fallback');
+      window.storageUtils.saveApiKeyLocally(apiKey);
+      console.log('Chave API salva localmente');
     } catch (err) {
-        console.warn('Erro ao salvar chave API no localStorage:', err);
+      console.warn('Erro ao salvar chave API localmente:', err);
     }
-    
-    // Tentar salvar usando o módulo de armazenamento se disponível
-    if (window.storageUtils && typeof window.storageUtils.saveApiKeyLocally === 'function') {
-        try {
-            window.storageUtils.saveApiKeyLocally(apiKey);
-            console.log('Chave API salva localmente via storageUtils');
-        } catch (err) {
-            console.warn('Erro ao salvar chave API via storageUtils:', err);
-        }
+  } else {
+    console.warn('storageUtils não disponível para salvar localmente');
+  }
+  
+  // Se estiver offline, apenas salva localmente e retorna sucesso
+  if (!window.navigator.onLine) {
+    console.log('Modo offline: chave API salva apenas localmente');
+    return Promise.resolve("Chave API salva localmente (modo offline)");
+  }
+  
+  // Criptografar a chave usando o módulo de segurança
+  let encryptedKey = apiKey;
+  try {
+    if (window.securityUtils && typeof window.securityUtils.encryptApiKey === 'function') {
+      encryptedKey = window.securityUtils.encryptApiKey(apiKey);
+      console.log('Chave API criptografada com sucesso');
+    } else {
+      console.warn('securityUtils não disponível para criptografia');
     }
-    
-    // Se estiver offline, apenas salva localmente e retorna sucesso
-    if (!window.navigator.onLine) {
-        console.log('Modo offline: chave API salva apenas localmente');
-        return Promise.resolve("Chave API salva localmente (modo offline)");
-    }
-    
-    // Criptografar a chave usando o módulo de segurança
-    let encryptedKey = apiKey;
-    try {
-        if (window.securityUtils && typeof window.securityUtils.encryptApiKey === 'function') {
-            encryptedKey = window.securityUtils.encryptApiKey(apiKey);
-            console.log('Chave API criptografada com sucesso');
-        } else {
-            console.warn('securityUtils não disponível para criptografia');
-        }
-    } catch (err) {
-        console.error('Erro ao criptografar chave API:', err);
-    }
-    
-    // Salvar no Firebase
-    const apiKeyData = {
-        value: encryptedKey,
-        updatedAt: firebase.database.ServerValue.TIMESTAMP,
-        isEncrypted: window.securityUtils && typeof window.securityUtils.encryptApiKey === 'function'
-    };
-    
-    console.log('Salvando chave API no Firebase...');
-    
-    // Obter a referência correta para o caminho da chave API do usuário
-    const apiKeyRef = getUserApiKeysRef(user.uid);
-    
-    if (!apiKeyRef) {
-        console.error('Não foi possível obter referência para o caminho da chave API');
-        return Promise.reject(new Error('Erro ao obter referência do Firebase'));
-    }
-    
-    return apiKeyRef.set(apiKeyData)
-        .then(() => {
-            console.log('Chave API salva com sucesso no Firebase');
-            return "Chave API salva com sucesso";
-        })
-        .catch((error) => {
-            console.error('Erro ao salvar chave API no Firebase:', error);
-            throw error;
-        });
+  } catch (err) {
+    console.error('Erro ao criptografar chave API:', err);
+  }
+  
+  // Salvar no Firebase
+  const apiKeyData = {
+    value: encryptedKey,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP,
+    isEncrypted: window.securityUtils && typeof window.securityUtils.encryptApiKey === 'function'
+  };
+  
+  return getUserApiKeysRef(user.uid).set(apiKeyData)
+    .then(() => {
+      console.log('Chave API salva com sucesso no Firebase');
+      return "Chave API salva com sucesso";
+    })
+    .catch((error) => {
+      console.error('Erro ao salvar chave API no Firebase:', error);
+      throw error;
+    });
 }
+
 /**
  * Salva uma transcrição no Firebase e/ou localStorage
  * @param {Object} transcriptionData - Dados da transcrição a ser salva

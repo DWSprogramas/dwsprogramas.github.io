@@ -1,7 +1,6 @@
 // Inicializar a interface de usuário
+// Inicializar a interface de usuário
 function initUI() {
-    console.log("Inicializando UI...");
-    
     // Configurar navegação por abas
     setupTabs();
     
@@ -18,55 +17,15 @@ function initUI() {
     const logoutButton = document.querySelector('.logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', logout);
-        console.log("Evento de logout registrado");
     }
     
     // Configurar o manipulador de evento para o botão de salvar chave API
     const saveApiKeyButton = document.getElementById('saveApiKey');
     if (saveApiKeyButton) {
-        // Remover quaisquer manipuladores de eventos existentes para evitar duplicação
-        const newSaveButton = saveApiKeyButton.cloneNode(true);
-        saveApiKeyButton.parentNode.replaceChild(newSaveButton, saveApiKeyButton);
-        
-        // Adicionar o manipulador de evento
-        newSaveButton.addEventListener('click', () => {
-            console.log("Botão salvar API clicado");
-            handleSaveApiKey();
-        });
-        
-        console.log("Evento de salvar API key registrado");
-    } else {
-        console.warn("Botão de salvar API não encontrado no DOM");
-    }
-    
-    // Verificar se a chave API já está disponível e habilitar botões se necessário
-    checkApiKeyAndEnableRecording();
-}
-
-// Função para verificar se a chave API já está disponível e habilitar botões se for o caso
-function checkApiKeyAndEnableRecording() {
-    // Tentar obter a chave API diretamente do localStorage como fallback
-    let apiKey = localStorage.getItem('openai_api_key');
-    
-    if (apiKey) {
-        console.log("Chave API encontrada, habilitando botão de gravação");
-        
-        // Mostrar a chave no campo de input
-        const apiKeyInput = document.getElementById('apiKey');
-        if (apiKeyInput) {
-            apiKeyInput.value = apiKey;
-        }
-        
-        // Habilitar botão de gravação
-        const startRecordingButton = document.getElementById('startRecording');
-        if (startRecordingButton) {
-            startRecordingButton.disabled = false;
-        }
+        saveApiKeyButton.addEventListener('click', handleSaveApiKey);
     }
 }
 
-    
-    
 // Função para mostrar informações do usuário na interface
 function mostrarInfoUsuario() {
     console.log('Verificando usuário para mostrar informações...');
@@ -228,7 +187,7 @@ function setupPWAInstall() {
 }
 
 // Em ui-controller.js
-function loadTranscriptionsList() {
+ function loadTranscriptionsList() {
   // Chamar a implementação do módulo de transcrição
   if (window.transcriptionUtils && window.transcriptionUtils.loadTranscriptionsList) {
     window.transcriptionUtils.loadTranscriptionsList();
@@ -237,82 +196,28 @@ function loadTranscriptionsList() {
   }
 }
 
+
 // Manipulador para o botão de salvar chave API
 function handleSaveApiKey() {
     const apiKey = document.getElementById('apiKey').value.trim();
-    console.log("Função handleSaveApiKey chamada com chave:", apiKey ? "***" : "vazia");
-    
-    if (!apiKey) {
-        showError("Por favor, insira uma chave API válida");
-        return;
-    }
-    
-    if (!apiKey.startsWith("sk-")) {
-        showError("Chave API inválida. Deve começar com 'sk-'");
-        return;
-    }
-    
-    // Mostrar feedback visual
-    const saveButton = document.getElementById('saveApiKey');
-    const originalText = saveButton.textContent;
-    saveButton.textContent = "Salvando...";
-    saveButton.disabled = true;
-    
-    // Primeiro salvar localmente
-    try {
-        // Fallback para localStorage direto
-        localStorage.setItem('openai_api_key', apiKey);
-        console.log("Chave API salva no localStorage");
-    } catch (err) {
-        console.warn("Erro ao salvar no localStorage:", err);
-    }
-    
-    // Também tenta usar o storageUtils se disponível
-    if (window.storageUtils && typeof window.storageUtils.saveApiKeyLocally === 'function') {
-        try {
-            window.storageUtils.saveApiKeyLocally(apiKey);
-            console.log("Chave API salva via storageUtils");
-        } catch (err) {
-            console.warn("Erro ao salvar via storageUtils:", err);
+    if (apiKey && apiKey.startsWith("sk-")) {
+        // Salvar localmente
+        window.storageUtils.saveApiKeyLocally(apiKey);
+        
+        // Salvar no Firebase se o usuário estiver logado
+        if (firebase.auth().currentUser) {
+            window.firebaseHelper.saveUserApiKey(apiKey)
+                .then(() => {
+                    updateStatus("Chave API salva com sucesso!");
+                })
+                .catch((error) => {
+                    showError("Erro ao salvar chave API: " + error.message);
+                });
+        } else {
+            updateStatus("Chave API salva localmente com sucesso!");
         }
-    } 
-    
-    // Tentar salvar no Firebase
-    if (window.firebaseHelper && typeof window.firebaseHelper.saveUserApiKey === 'function') {
-        console.log("Chamando firebaseHelper.saveUserApiKey...");
-        window.firebaseHelper.saveUserApiKey(apiKey)
-            .then(() => {
-                console.log("Chave API salva com sucesso no Firebase");
-                updateStatus("Chave API salva com sucesso!");
-                
-                // Atualizar status de habilitação do botão de gravação
-                const startRecordingButton = document.getElementById('startRecording');
-                if (startRecordingButton) {
-                    startRecordingButton.disabled = false;
-                }
-            })
-            .catch((error) => {
-                console.error("Erro ao salvar chave API no Firebase:", error);
-                showError("Erro ao salvar chave API: " + error.message);
-            })
-            .finally(() => {
-                // Restaurar o botão
-                saveButton.textContent = originalText;
-                saveButton.disabled = false;
-            });
     } else {
-        console.warn("firebaseHelper.saveUserApiKey não está disponível");
-        
-        // Mesmo sem Firebase, consideramos um sucesso local
-        updateStatus("Chave API salva localmente com sucesso!");
-        saveButton.textContent = originalText;
-        saveButton.disabled = false;
-        
-        // Habilitar botão de gravação mesmo sem Firebase
-        const startRecordingButton = document.getElementById('startRecording');
-        if (startRecordingButton) {
-            startRecordingButton.disabled = false;
-        }
+        showError("Chave API inválida. Deve começar com 'sk-'");
     }
 }
 
